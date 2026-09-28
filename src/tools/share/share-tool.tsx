@@ -320,7 +320,7 @@ export default function ShareTool() {
                       setRecipient(publicKeyFrom(event.target.value));
                       clearOutput();
                     }}
-                    className="min-w-0 flex-1 font-mono"
+                    className="min-w-0 flex-1 font-mono text-xs"
                   />
                   <QrScannerButton
                     title={t('share.scanPublicKey')}

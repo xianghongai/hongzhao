@@ -167,7 +167,7 @@ function RandomKeyPanel({
               setValue(event.target.value);
               setError('');
             }}
-            className="min-w-0 flex-1 font-mono"
+            className="min-w-0 flex-1 font-mono text-xs"
           />
           <Button type="submit" disabled={value.trim() === ''}>
             <RotateCcwKeyIcon data-icon="inline-start" />
@@ -294,7 +294,7 @@ function ImportPrivateKeyDialog({
               spellCheck={false}
               aria-invalid={invalid || undefined}
               onChange={(event) => setValue(event.target.value)}
-              className="font-mono"
+              className="font-mono text-xs"
             />
             {invalid ? (
               <FieldError>{t('receive.privateKeyInvalid')}</FieldError>

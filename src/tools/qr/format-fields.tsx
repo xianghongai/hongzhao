@@ -33,7 +33,7 @@ function FieldControl({
           value={value}
           placeholder={field.placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className="max-h-72 min-h-28"
+          className="max-h-72 min-h-28 text-sm"
         />
       );
     case 'select':
@@ -51,6 +51,7 @@ function FieldControl({
           autoComplete="off"
           spellCheck={false}
           onChange={(event) => onChange(event.target.value)}
+          className="text-sm"
         />
       );
   }
