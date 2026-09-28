@@ -177,6 +177,7 @@ function RandomKeyPanel({
           <QrScannerButton
             title={t('receive.scanKey')}
             description={t('receive.scanKeyDescription')}
+            autoClose
             onDetect={(text) => {
               const message = onScan(text);
               toast(message);
@@ -683,6 +684,7 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                     <QrScannerButton
                       title={t('receive.scanContent')}
                       description={t('receive.scanContentDescription')}
+                      autoClose
                       onDetect={receive}
                     />
                     <Button variant="outline" onClick={() => fileInput.current?.click()}>

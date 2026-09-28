@@ -21,11 +21,13 @@ function cameraAvailable(): boolean {
 type Status = 'starting' | 'scanning' | 'denied' | 'failed';
 
 interface ScannerViewProps {
-  /** Handles one scanned text and returns what to tell the user, such as “Received”. */
+  /** Handles one scanned text and returns what to tell the user, such as \u201cReceived\u201d. */
   onDetect: (text: string) => string;
+  /** Called after a successful detection to close the dialog. */
+  onClose?: () => void;
 }
 
-function ScannerView({ onDetect }: ScannerViewProps) {
+function ScannerView({ onDetect, onClose }: ScannerViewProps) {
   const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
   const [status, setStatus] = useState<Status>('starting');
@@ -33,6 +35,7 @@ function ScannerView({ onDetect }: ScannerViewProps) {
   const handle = useEffectEvent((text: string) => {
     const message = onDetect(text);
     setFeedback((current) => ({ text: message, count: (current?.count ?? 0) + 1 }));
+    onClose?.();
   });
 
   useEffect(() => {
@@ -113,13 +116,22 @@ interface QrScannerButtonProps extends ScannerViewProps {
   description: string;
   label?: string;
   variant?: React.ComponentProps<typeof Button>['variant'];
+  /** Close the dialog automatically after the first successful scan. */
+  autoClose?: boolean;
 }
 
 /**
  * Opens the camera in a dialog and keeps scanning until it is closed, so several codes can be read in a row.
  * The stream stops as soon as the dialog closes.
  */
-export function QrScannerButton({ title, description, label, variant = 'outline', onDetect }: QrScannerButtonProps) {
+export function QrScannerButton({
+  title,
+  description,
+  label,
+  variant = 'outline',
+  autoClose,
+  onDetect,
+}: QrScannerButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const available = cameraAvailable();
@@ -148,7 +160,7 @@ export function QrScannerButton({ title, description, label, variant = 'outline'
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
-          {open && <ScannerView onDetect={onDetect} />}
+          {open && <ScannerView onDetect={onDetect} onClose={autoClose ? () => setOpen(false) : undefined} />}
         </DialogContent>
       </Dialog>
     </>

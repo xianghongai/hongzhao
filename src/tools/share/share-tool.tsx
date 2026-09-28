@@ -325,6 +325,7 @@ export default function ShareTool() {
                   <QrScannerButton
                     title={t('share.scanPublicKey')}
                     description={t('share.scanPublicKeyDescription')}
+                    autoClose
                     onDetect={(scanned) => {
                       // Either the bare key or the receiver's public-key link.
                       const key = publicKeyFrom(scanned);
