@@ -1,0 +1,144 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Brand tokens: one amber accent on warm stone greys. Dark is the default theme.
+ */
+@theme {
+  --font-sans:
+    'Geist Variable', ui-sans-serif, system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-heading: var(--font-sans);
+
+  /* Page width cap on very wide screens. */
+  --container-page: 100rem;
+
+  @keyframes countdown {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: 100;
+    }
+  }
+}
+
+@theme inline {
+  /*
+   * The OTP ring drains once per period; the duration and start offset come from custom properties set on the element.
+   * Inlined into the utility, so they resolve per element rather than once on :root.
+   */
+  --animate-countdown: countdown var(--countdown-duration, 30s) linear var(--countdown-delay, 0s) forwards;
+
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.625rem;
+  --brand: oklch(0.56 0.13 60);
+  --brand-foreground: oklch(0.99 0.005 85);
+  --background: oklch(0.985 0.003 85);
+  --foreground: oklch(0.21 0.008 70);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.008 70);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.008 70);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: oklch(0.955 0.005 80);
+  --secondary-foreground: oklch(0.26 0.01 70);
+  --muted: oklch(0.955 0.005 80);
+  --muted-foreground: oklch(0.52 0.012 70);
+  --accent: oklch(0.95 0.012 80);
+  --accent-foreground: oklch(0.26 0.01 70);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.905 0.006 80);
+  --input: oklch(0.89 0.006 80);
+  --ring: oklch(0.56 0.13 60);
+}
+
+.dark {
+  --brand: oklch(0.82 0.13 78);
+  --brand-foreground: oklch(0.22 0.035 65);
+  --background: oklch(0.165 0.005 70);
+  --foreground: oklch(0.94 0.008 80);
+  --card: oklch(0.2 0.006 70);
+  --card-foreground: oklch(0.94 0.008 80);
+  --popover: oklch(0.22 0.006 70);
+  --popover-foreground: oklch(0.94 0.008 80);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: oklch(0.26 0.007 70);
+  --secondary-foreground: oklch(0.94 0.008 80);
+  --muted: oklch(0.25 0.007 70);
+  --muted-foreground: oklch(0.7 0.012 75);
+  --accent: oklch(0.27 0.01 70);
+  --accent-foreground: oklch(0.94 0.008 80);
+  --destructive: oklch(0.7 0.18 25);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.82 0.13 78);
+}
+
+/* The horizontal frame shared by header, main and footer: full width with gutters, 80% of wide screens. */
+@utility page-width {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: --spacing(4);
+
+  @variant sm {
+    padding-inline: --spacing(6);
+  }
+
+  @variant xl {
+    width: 80%;
+    padding-inline: 0;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  body {
+    @apply min-h-dvh bg-background text-foreground;
+  }
+  ::selection {
+    @apply bg-brand/30;
+  }
+}
