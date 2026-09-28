@@ -1,4 +1,5 @@
 import { PlusIcon, XIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ interface SecretRowsProps {
 }
 
 export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: SecretRowsProps) {
+  const { t } = useTranslation();
   const update = (id: number, patch: Partial<NamedSecret>) =>
     onChange(rows.map((row) => (row.id === id ? { id, name: row.name, secret: row.secret, ...patch } : row)));
 
@@ -73,8 +75,8 @@ export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: Secr
   return (
     <div className="grid gap-2">
       <div className="flex gap-2 text-sm font-medium" aria-hidden="true">
-        <span className="w-28 shrink-0 sm:w-36">名称（可选）</span>
-        <span className="flex-1">密钥或 otpauth:// 链接</span>
+        <span className="w-28 shrink-0 sm:w-36">{t('otp.nameColumn')}</span>
+        <span className="flex-1">{t('otp.secretColumn')}</span>
         <span className="w-7" />
       </div>
 
@@ -82,9 +84,9 @@ export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: Secr
         <div key={row.id} className="grid gap-1">
           <div className="flex gap-2">
             <Input
-              aria-label={`第 ${index + 1} 行名称`}
+              aria-label={t('otp.rowName', { row: index + 1 })}
               value={row.name}
-              placeholder="GitHub"
+              placeholder={t('otp.namePlaceholder')}
               autoFocus={row.id === focusId}
               autoComplete="off"
               spellCheck={false}
@@ -93,10 +95,10 @@ export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: Secr
               className="w-28 shrink-0 sm:w-36"
             />
             <Input
-              aria-label={`第 ${index + 1} 行密钥`}
+              aria-label={t('otp.rowSecret', { row: index + 1 })}
               aria-invalid={row.error ? true : undefined}
               value={row.secret}
-              placeholder="JBSW Y3DP EHPK 3PXP"
+              placeholder={t('otp.secretPlaceholder')}
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}
@@ -108,7 +110,7 @@ export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: Secr
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={`删除第 ${index + 1} 行`}
+              aria-label={t('otp.removeRow', { row: index + 1 })}
               disabled={rows.length === 1 && isBlank(row)}
               onClick={() => remove(row.id)}
             >
@@ -121,7 +123,7 @@ export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: Secr
 
       <Button variant="ghost" size="sm" className="w-fit text-muted-foreground" onClick={onAddRow}>
         <PlusIcon data-icon="inline-start" />
-        添加一行
+        {t('otp.addRow')}
       </Button>
     </div>
   );

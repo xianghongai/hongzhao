@@ -1,7 +1,9 @@
 import { cn } from 'cn';
 import { PencilIcon, QrCodeIcon, TrashIcon, TriangleAlertIcon } from 'lucide-react';
+import type { TFunction } from 'i18next';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { QrPreview } from '@/components/qr-code-view';
 import { Note } from '@/components/tool-page';
@@ -22,12 +24,12 @@ import { encodeQr } from '@/lib/qr/encode';
 import { type StoredEntry, removeEntry, renameEntry } from '@/tools/otp/store';
 
 /** The issuer plus any parameter that differs from the common SHA1, 6 digits, 30 seconds. */
-function entryDetails(entry: OtpEntry): string {
+function entryDetails(t: TFunction, entry: OtpEntry): string {
   return [
     entry.issuer,
     entry.algorithm !== DEFAULT_SETTINGS.algorithm && entry.algorithm,
-    entry.digits !== DEFAULT_SETTINGS.digits && `${entry.digits} 位`,
-    entry.period !== DEFAULT_SETTINGS.period && `${entry.period} 秒`,
+    entry.digits !== DEFAULT_SETTINGS.digits && t('common.digits', { count: entry.digits }),
+    entry.period !== DEFAULT_SETTINGS.period && t('common.seconds', { count: entry.period }),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -89,26 +91,27 @@ function IconAction({ label, children, ...props }: React.ComponentProps<typeof B
 }
 
 function ExportDialog({ entry }: { entry: StoredEntry }) {
+  const { t } = useTranslation();
   const result = useMemo(() => encodeQr(toUri(entry), 'M'), [entry]);
 
   return (
     <Dialog>
       <Tooltip>
         <TooltipTrigger
-          render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label="导出二维码" />} />}
+          render={<DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t('otp.export')} />} />}
         >
           <QrCodeIcon />
         </TooltipTrigger>
-        <TooltipContent>导出二维码</TooltipContent>
+        <TooltipContent>{t('otp.export')}</TooltipContent>
       </Tooltip>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>导出到验证器 App</DialogTitle>
-          <DialogDescription>用手机上的 Google 身份验证器、Microsoft Authenticator 等扫描导入。</DialogDescription>
+          <DialogTitle>{t('otp.exportTitle')}</DialogTitle>
+          <DialogDescription>{t('otp.exportDescription')}</DialogDescription>
         </DialogHeader>
-        {result.ok && <QrPreview qr={result.qr} label="两步验证密钥二维码" filename="otp" />}
+        {result.ok && <QrPreview qr={result.qr} label={t('otp.exportQr')} filename="otp" />}
         <Note tone="warning" icon={TriangleAlertIcon}>
-          <p>这个二维码包含密钥本身，任何扫到它的人都能生成你的验证码。用完请关闭，不要截图留存。</p>
+          <p>{t('otp.exportWarning')}</p>
         </Note>
       </DialogContent>
     </Dialog>
@@ -123,6 +126,7 @@ interface EntryCardProps {
 }
 
 export function EntryCard({ entry, now, index, hidden }: EntryCardProps) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const periodMs = entry.period * 1000;
   const counter = Math.floor(now / periodMs);
@@ -133,14 +137,14 @@ export function EntryCard({ entry, now, index, hidden }: EntryCardProps) {
   );
   const elapsed = elapsedInPeriod(entry, now);
   const remaining = Math.ceil((periodMs - elapsed) / 1000);
-  const name = entry.label || `未命名 ${index + 1}`;
-  const details = entryDetails(entry);
+  const name = entry.label || t('otp.unnamed', { index: index + 1 });
+  const details = entryDetails(t, entry);
 
   const copy = async () => {
     if (await copyText(code)) {
-      toast.success(`已复制 ${name} 的验证码`);
+      toast.success(t('otp.codeCopied', { name }));
     } else {
-      toast.error('复制失败，请手动输入');
+      toast.error(t('otp.codeCopyFailed'));
     }
   };
 
@@ -156,7 +160,7 @@ export function EntryCard({ entry, now, index, hidden }: EntryCardProps) {
           <Input
             autoFocus
             defaultValue={entry.label}
-            aria-label="名称"
+            aria-label={t('otp.nameLabel')}
             className="h-7"
             onBlur={(event) => commitRename(event.target.value)}
             onKeyDown={(event) => {
@@ -176,14 +180,14 @@ export function EntryCard({ entry, now, index, hidden }: EntryCardProps) {
       <button
         type="button"
         onClick={copy}
-        aria-label={`复制 ${name} 的验证码`}
+        aria-label={t('otp.copyCode', { name })}
         className="group grid rounded-lg px-2 py-1 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <span className="font-mono text-2xl font-medium tracking-wider tabular-nums">
           {hidden ? groupDigits('•'.repeat(entry.digits)) : groupDigits(code)}
         </span>
         <span className="font-mono text-xs text-muted-foreground tabular-nums">
-          下一个 {hidden ? '•••' : groupDigits(nextCode)}
+          {t('otp.next', { code: hidden ? '•••' : groupDigits(nextCode) })}
         </span>
       </button>
 
@@ -195,11 +199,11 @@ export function EntryCard({ entry, now, index, hidden }: EntryCardProps) {
       </div>
 
       <div className="flex items-center">
-        <IconAction label="重命名" onClick={() => setEditing(true)}>
+        <IconAction label={t('otp.rename')} onClick={() => setEditing(true)}>
           <PencilIcon />
         </IconAction>
         <ExportDialog entry={entry} />
-        <IconAction label="移除" onClick={() => removeEntry(entry.id)}>
+        <IconAction label={t('otp.remove')} onClick={() => removeEntry(entry.id)}>
           <TrashIcon />
         </IconAction>
       </div>

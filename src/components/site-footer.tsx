@@ -1,8 +1,12 @@
+import { useTranslation } from 'react-i18next';
+
 import { InstallButton } from '@/components/install-button';
+import { LanguageMenu } from '@/components/language-menu';
 import { PrivacyDialog } from '@/components/privacy-dialog';
 import { repositoryUrl } from '@/lib/site';
 
 export function SiteFooter() {
+  const { t } = useTranslation();
   const repo = repositoryUrl();
 
   return (
@@ -12,9 +16,10 @@ export function SiteFooter() {
         <InstallButton />
         {repo && (
           <a href={repo} rel="noreferrer" className="transition-colors hover:text-foreground">
-            源码
+            {t('footer.source')}
           </a>
         )}
+        <LanguageMenu />
       </div>
     </footer>
   );

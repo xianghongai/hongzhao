@@ -16,12 +16,18 @@
 | 承诺   | 实现方式                                                                                                                                                                                                                                                                       |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 不上传 | 构建产物带有内容安全策略（CSP）`connect-src 'none'`，由浏览器阻止一切 fetch、XHR、WebSocket 和 beacon。链接传送的内容位于 URL 的 `#` 片段，浏览器不会把片段发送给服务器，接收页读取后立即将其从地址栏移除。Service Worker 会下载和更新本站自身的文件，这些请求不含任何输入内容 |
-| 不留存 | 不使用 Cookie、localStorage、sessionStorage 或 IndexedDB，主题偏好也不保存；离线缓存（Cache Storage）里只有本站的代码、样式、字体和图标                                                                                                                                        |
+| 不留存 | 不使用 Cookie、localStorage、sessionStorage 或 IndexedDB，主题和语言偏好也不保存，手动选择的语言只写在网址参数 `?lang=` 里；离线缓存（Cache Storage）里只有本站的代码、样式、字体和图标                                                                                        |
 | 不追踪 | 没有统计和第三方脚本；所有依赖从 npm 安装并随站点打包，不引用 CDN                                                                                                                                                                                                              |
 
 验证方法：打开浏览器开发者工具的“网络”面板后使用任意工具，列表中不会出现新的请求。访问过一次后，断开网络也能继续使用。
 
 链接传送的残余风险：浏览器会把打开过的完整链接记入历史记录，开启同步时还会上传。传送敏感内容时应开启加密，并让链接和密钥走不同的渠道。
+
+## 界面语言
+
+支持简体中文、繁体中文、英文、日文和韩文。默认按浏览器的语言偏好显示，都不匹配时显示英文；在手动切换后，所选语言写入网址参数 `?lang=`，刷新和书签都能保留。链接传送生成的链接不带语言参数，接收方按自己的浏览器语言显示。繁体中文由简体逐字转换生成，用词与简体相同。
+
+文案放在 `src/locales/`，每种语言构建成一个独立的脚本文件，只在显示该语言时加载。没有放在 `public/` 里用 `fetch()` 读取，因为 CSP 的 `connect-src 'none'` 会拦截这类请求。
 
 ## 离线与安装
 
@@ -68,6 +74,7 @@ pnpm dev:lan      # 同时监听局域网地址，供手机访问
 | `pnpm test`                 | 运行单元测试                                        |
 | `pnpm check-types`          | 类型检查                                            |
 | `pnpm lint` / `pnpm format` | 代码检查与格式化                                    |
+| `pnpm locales:hant`         | 由简体中文文案重新生成繁体中文                      |
 | `pnpm pwa:icons`            | 由 `public/favicon.svg` 重新生成 PWA 图标           |
 | `pnpm pwa:icons:amber`      | 重新生成琥珀色底的图标物料（`public/brand/amber/`） |
 
@@ -81,7 +88,7 @@ pnpm dev:lan      # 同时监听局域网地址，供手机访问
 
 ## 技术栈
 
-Vite、React、TypeScript、Tailwind CSS v4、shadcn/ui（Base UI）、Lucide、Motion。离线与安装使用 `vite-plugin-pwa`（Workbox）。二维码生成使用 `uqr`；识别优先使用浏览器原生的 `BarcodeDetector`，不可用时回退到纯 JavaScript 的 `jsQR`，不加载 WASM，因此不需要放宽 CSP。编码使用 `@scure/base` 和 `fflate`。
+Vite、React、TypeScript、Tailwind CSS v4、shadcn/ui（Base UI）、Lucide、Motion。离线与安装使用 `vite-plugin-pwa`（Workbox）。多语言使用 i18next 与 react-i18next，繁体中文由 OpenCC（`opencc-js`）在开发时生成。二维码生成使用 `uqr`；识别优先使用浏览器原生的 `BarcodeDetector`，不可用时回退到纯 JavaScript 的 `jsQR`，不加载 WASM，因此不需要放宽 CSP。编码使用 `@scure/base` 和 `fflate`。
 
 ## 许可
 

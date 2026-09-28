@@ -1,9 +1,10 @@
 import { FileTextIcon, InfoIcon, PenLineIcon, QrCodeIcon, TriangleAlertIcon } from 'lucide-react';
 import { useDeferredValue, useId, useMemo, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { ClearButton } from '@/components/clear-button';
 import { CopyButton } from '@/components/copy-button';
-import { OptionSelect, type Option } from '@/components/option-select';
+import { OptionSelect } from '@/components/option-select';
 import { QrPreview } from '@/components/qr-code-view';
 import { Note, ToolPage } from '@/components/tool-page';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,36 +17,29 @@ import { type Ecc, encodeQr, fitsBytes } from '@/lib/qr/encode';
 import { encodePlain } from '@/lib/share/envelope';
 import { budgetedLength, isLoopback, receiveUrl, siteBase } from '@/lib/share/link';
 import { FormatFields } from '@/tools/qr/format-fields';
-import { FORMATS, type Values } from '@/tools/qr/formats';
+import { FORMAT_IDS, type FormatId, INITIAL_VALUES, type Values, buildFormats } from '@/tools/qr/formats';
 
-const ECC_OPTIONS: ReadonlyArray<Option<Ecc>> = [
-  { value: 'L', label: '低 L · 容量最大' },
-  { value: 'M', label: '中 M · 推荐' },
-  { value: 'Q', label: '较高 Q' },
-  { value: 'H', label: '高 H · 最耐污损' },
-];
-
-/** Replaces the format's own summary while the relay is on: the phone opens the receive page instead. */
-const RELAY_SUMMARY = '扫码后先打开本站接收页显示原文，不会直接打开链接。';
-
-const INITIAL_VALUES = Object.fromEntries(FORMATS.map((format) => [format.id, format.initial]));
+const ECC_LEVELS: readonly Ecc[] = ['L', 'M', 'Q', 'H'];
 
 /** Whether any format holds something other than its starting values. */
-function hasInput(values: Record<string, Values>): boolean {
-  return FORMATS.some((format) =>
-    Object.entries(values[format.id] ?? {}).some(([name, value]) => value !== (format.initial[name] ?? ''))
+function hasInput(values: Record<FormatId, Values>): boolean {
+  return FORMAT_IDS.some((id) =>
+    Object.entries(values[id]).some(([name, value]) => value !== (INITIAL_VALUES[id][name] ?? ''))
   );
 }
 
 export default function QrTool() {
-  const [formatId, setFormatId] = useState(FORMATS[0]!.id);
-  const [values, setValues] = useState<Record<string, Values>>(INITIAL_VALUES);
+  const { t } = useTranslation();
+  const formats = useMemo(() => buildFormats(t), [t]);
+  const eccOptions = ECC_LEVELS.map((value) => ({ value, label: t(`qr.ecc${value}`) }));
+  const [formatId, setFormatId] = useState<FormatId>('text');
+  const [values, setValues] = useState<Record<FormatId, Values>>(INITIAL_VALUES);
   const [ecc, setEcc] = useState<Ecc>('M');
   const [relay, setRelay] = useState(false);
   const ids = useId();
 
-  const format = FORMATS.find((item) => item.id === formatId) ?? FORMATS[0]!;
-  const built = format.build(values[format.id] ?? format.initial);
+  const format = formats.find((item) => item.id === formatId) ?? formats[0]!;
+  const built = format.build(values[format.id]);
   const useRelay = format.relay && relay;
   const base = siteBase();
 
@@ -67,8 +61,8 @@ export default function QrTool() {
   return (
     <ToolPage
       icon={QrCodeIcon}
-      title="二维码"
-      description="填写内容，实时生成二维码。"
+      title={t('tools.qr.title')}
+      description={t('qr.description')}
       actions={
         <ClearButton
           disabled={!hasInput(values)}
@@ -86,19 +80,19 @@ export default function QrTool() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PenLineIcon className="size-4 text-brand" />
-              内容
+              {t('qr.content')}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6">
             <ToggleGroup
-              aria-label="格式"
+              aria-label={t('qr.format')}
               variant="outline"
               size="sm"
               value={[format.id]}
-              onValueChange={(next) => next[0] !== undefined && setFormatId(String(next[0]))}
+              onValueChange={(next) => next[0] !== undefined && setFormatId(next[0] as FormatId)}
               className="flex w-full flex-wrap"
             >
-              {FORMATS.map(({ id, label, icon: Icon }) => (
+              {formats.map(({ id, label, icon: Icon }) => (
                 <ToggleGroupItem
                   key={id}
                   value={id}
@@ -109,21 +103,21 @@ export default function QrTool() {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            <p className="-mt-3 text-sm text-muted-foreground">{useRelay ? RELAY_SUMMARY : format.summary}</p>
+            <p className="-mt-3 text-sm text-muted-foreground">{useRelay ? t('qr.relaySummary') : format.summary}</p>
 
-            <FormatFields fields={format.fields} values={values[format.id] ?? format.initial} onChange={updateField} />
+            <FormatFields fields={format.fields} values={values[format.id]} onChange={updateField} />
 
             <Separator />
 
             <Field>
-              <FieldLabel htmlFor={`${ids}-ecc`}>纠错等级</FieldLabel>
-              <OptionSelect id={`${ids}-ecc`} value={ecc} options={ECC_OPTIONS} onChange={setEcc} />
+              <FieldLabel htmlFor={`${ids}-ecc`}>{t('qr.ecc')}</FieldLabel>
+              <OptionSelect id={`${ids}-ecc`} value={ecc} options={eccOptions} onChange={setEcc} />
             </Field>
             {format.relay && (
               <Field orientation="horizontal">
                 <FieldContent>
-                  <FieldLabel htmlFor={`${ids}-relay`}>扫码后不直接打开链接</FieldLabel>
-                  <FieldDescription>适合订阅地址等只需复制、不该打开的内容。</FieldDescription>
+                  <FieldLabel htmlFor={`${ids}-relay`}>{t('qr.relay')}</FieldLabel>
+                  <FieldDescription>{t('qr.relayDescription')}</FieldDescription>
                 </FieldContent>
                 <Switch id={`${ids}-relay`} checked={relay} onCheckedChange={setRelay} />
               </Field>
@@ -132,8 +126,7 @@ export default function QrTool() {
             {useRelay && isLoopback(base) && (
               <Note tone="warning" icon={TriangleAlertIcon}>
                 <p>
-                  当前通过 localhost 访问，手机无法打开接收页。请改用局域网地址（例如运行 <code>pnpm dev:lan</code>{' '}
-                  后显示的地址）或线上站点打开本页。
+                  <Trans i18nKey="qr.localhost" components={{ code: <code /> }} />
                 </p>
               </Note>
             )}
@@ -145,20 +138,24 @@ export default function QrTool() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <QrCodeIcon className="size-4 text-brand" />
-                二维码
+                {t('qr.qrCode')}
               </CardTitle>
             </CardHeader>
             <CardContent className="grid justify-items-center gap-4">
               <div className="w-full max-w-80">
                 {result.ok ? (
-                  <QrPreview qr={result.qr} label={`${format.label}二维码`} filename={`qr-${format.id}`} />
+                  <QrPreview
+                    qr={result.qr}
+                    label={t('qr.qrLabel', { format: format.label })}
+                    filename={`qr-${format.id}`}
+                  />
                 ) : (
                   <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                     <QrCodeIcon className="size-8 opacity-40" />
                     {'error' in built && built.error !== ''
                       ? built.error
                       : result.reason === 'too-long'
-                        ? '内容超出二维码容量。可以降低纠错等级、精简内容，或改用“链接传送”。'
+                        ? t('qr.tooLong')
                         : null}
                   </div>
                 )}
@@ -170,7 +167,7 @@ export default function QrTool() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileTextIcon className="size-4 text-brand" />
-                编码内容
+                {t('qr.encoded')}
               </CardTitle>
             </CardHeader>
             {result.ok ? (
@@ -178,10 +175,10 @@ export default function QrTool() {
                 <pre className="max-h-72 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap">
                   {deferredContent}
                 </pre>
-                <CopyButton value={deferredContent} size="sm" className="w-fit" what="编码内容" />
+                <CopyButton value={deferredContent} size="sm" className="w-fit" done={t('qr.encodedCopied')} />
                 {reserveShort && (
                   <Note icon={InfoIcon}>
-                    <p>当前可以使用。若将来站点换用更长的地址，同样的内容可能放不下。</p>
+                    <p>{t('qr.reserveShort')}</p>
                   </Note>
                 )}
               </CardContent>

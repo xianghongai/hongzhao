@@ -1,25 +1,26 @@
 import { ArrowRightIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 import { TOOLS } from '@/tools/registry';
 
 export function Home() {
+  const { t } = useTranslation();
+
   return (
     <div className="py-12 sm:py-20">
       <section className="max-w-2xl">
         <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-          几件顺手的小工具，
+          {t('home.headline1')}
           <br />
-          全部在你的浏览器里完成。
+          {t('home.headline2')}
         </h1>
-        <p className="mt-4 text-muted-foreground text-pretty">
-          内容只在这个页面里处理：不上传、不留存、不追踪。关闭标签页，一切随之消失；访问过一次后，断网也能照常使用。
-        </p>
+        <p className="mt-4 text-muted-foreground text-pretty">{t('home.intro')}</p>
       </section>
 
       <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {TOOLS.map(({ id, path, title, summary, icon: Icon }, index) => (
+        {TOOLS.map(({ id, path, icon: Icon }, index) => (
           <motion.li
             key={id}
             initial={{ opacity: 0, y: 12 }}
@@ -35,10 +36,10 @@ export function Home() {
               </span>
               <span className="grid gap-1.5">
                 <span className="flex items-center gap-1.5 font-medium">
-                  {title}
+                  {t(`tools.${id}.title`)}
                   <ArrowRightIcon className="size-4 -translate-x-1 opacity-0 transition-[translate,opacity] group-hover:translate-x-0 group-hover:opacity-100" />
                 </span>
-                <span className="text-sm text-muted-foreground">{summary}</span>
+                <span className="text-sm text-muted-foreground">{t(`tools.${id}.summary`)}</span>
               </span>
             </Link>
           </motion.li>

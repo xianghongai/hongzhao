@@ -44,18 +44,34 @@ export function normalizeSecret(raw: string): string | null {
   return secret;
 }
 
-function parseUri(input: string): OtpEntry | string {
+/** Why a secret or scanned code could not be added; the interface puts it into words. */
+export type OtpProblem =
+  | { problem: 'uriInvalid' }
+  | { problem: 'hotp' }
+  | { problem: 'algorithm'; algorithm: string }
+  | { problem: 'emptySecret' }
+  | { problem: 'migration' }
+  | { problem: 'base32' }
+  | { problem: 'notOtp' };
+
+export type ParseResult = OtpEntry | OtpProblem;
+
+export function isProblem(result: ParseResult): result is OtpProblem {
+  return 'problem' in result;
+}
+
+function parseUri(input: string): ParseResult {
   let otp: HOTP | TOTP;
   try {
     otp = URI.parse(input);
   } catch {
-    return '无法解析 otpauth:// 链接';
+    return { problem: 'uriInvalid' };
   }
   if (!(otp instanceof TOTP)) {
-    return '暂不支持基于计数器的 HOTP';
+    return { problem: 'hotp' };
   }
   if (!isAlgorithm(otp.algorithm)) {
-    return `暂不支持 ${otp.algorithm} 算法`;
+    return { problem: 'algorithm', algorithm: otp.algorithm };
   }
   return {
     label: otp.label,
@@ -73,22 +89,22 @@ const KEY_URI = /^otpauth(-migration)?:/i;
  * Parses a name and a secret. The secret is a Base32 key or an `otpauth://` URI;
  * a non-empty name overrides the account name a URI carries.
  */
-export function parseEntry({ name, secret }: NamedSecret, settings: OtpSettings = DEFAULT_SETTINGS): OtpEntry | string {
+export function parseEntry({ name, secret }: NamedSecret, settings: OtpSettings = DEFAULT_SETTINGS): ParseResult {
   const value = secret.trim();
   const label = name.trim();
   if (value === '') {
-    return '请输入密钥';
+    return { problem: 'emptySecret' };
   }
   if (/^otpauth-migration:/i.test(value)) {
-    return '暂不支持 Google 身份验证器的批量导出链接';
+    return { problem: 'migration' };
   }
   if (/^otpauth:/i.test(value)) {
     const parsed = parseUri(value);
-    return typeof parsed === 'string' || label === '' ? parsed : { ...parsed, label };
+    return isProblem(parsed) || label === '' ? parsed : { ...parsed, label };
   }
   const normalized = normalizeSecret(value);
   if (normalized === null) {
-    return '不是有效的 Base32 密钥';
+    return { problem: 'base32' };
   }
   return { label, issuer: '', secret: normalized, ...settings };
 }
@@ -117,7 +133,7 @@ export function splitLines(text: string): NamedSecret[] {
 }
 
 /** Parses one line of text: see {@link splitLine} and {@link parseEntry}. */
-export function parseLine(input: string, settings: OtpSettings = DEFAULT_SETTINGS): OtpEntry | string {
+export function parseLine(input: string, settings: OtpSettings = DEFAULT_SETTINGS): ParseResult {
   return parseEntry(splitLine(input), settings);
 }
 
@@ -125,10 +141,10 @@ export function parseLine(input: string, settings: OtpSettings = DEFAULT_SETTING
  * Parses the content of a scanned QR code. Setup codes always carry a key URI,
  * so anything else is reported as not a 2FA code rather than as a bad Base32 secret.
  */
-export function parseScanned(text: string): OtpEntry | string {
+export function parseScanned(text: string): ParseResult {
   const content = text.trim();
   if (!KEY_URI.test(content)) {
-    return '二维码内容不是两步验证密钥';
+    return { problem: 'notOtp' };
   }
   return parseLine(content);
 }

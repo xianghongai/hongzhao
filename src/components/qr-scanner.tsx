@@ -1,5 +1,6 @@
 import { CameraIcon } from 'lucide-react';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -19,18 +20,13 @@ function cameraAvailable(): boolean {
 
 type Status = 'starting' | 'scanning' | 'denied' | 'failed';
 
-const STATUS_TEXT: Record<Exclude<Status, 'scanning'>, string> = {
-  starting: '正在打开摄像头…',
-  denied: '没有摄像头权限。请在浏览器的网站设置中允许使用摄像头后重试。',
-  failed: '无法打开摄像头，可能正被其他应用占用。',
-};
-
 interface ScannerViewProps {
-  /** Handles one scanned text and returns what to tell the user, such as “已接收”. */
+  /** Handles one scanned text and returns what to tell the user, such as “Received”. */
   onDetect: (text: string) => string;
 }
 
 function ScannerView({ onDetect }: ScannerViewProps) {
+  const { t } = useTranslation();
   const video = useRef<HTMLVideoElement>(null);
   const [status, setStatus] = useState<Status>('starting');
   const [feedback, setFeedback] = useState<{ text: string; count: number } | null>(null);
@@ -97,7 +93,7 @@ function ScannerView({ onDetect }: ScannerViewProps) {
         <video ref={video} playsInline muted className="aspect-square w-full object-cover" />
         {status !== 'scanning' && (
           <p className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-white/80">
-            {STATUS_TEXT[status]}
+            {t(`scanner.${status}`)}
           </p>
         )}
       </div>
@@ -123,20 +119,15 @@ interface QrScannerButtonProps extends ScannerViewProps {
  * Opens the camera in a dialog and keeps scanning until it is closed, so several codes can be read in a row.
  * The stream stops as soon as the dialog closes.
  */
-export function QrScannerButton({
-  title,
-  description,
-  label = '扫码',
-  variant = 'outline',
-  onDetect,
-}: QrScannerButtonProps) {
+export function QrScannerButton({ title, description, label, variant = 'outline', onDetect }: QrScannerButtonProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const available = cameraAvailable();
 
   const button = (
     <Button variant={variant} disabled={!available} onClick={() => setOpen(true)}>
       <CameraIcon data-icon="inline-start" />
-      {label}
+      {label ?? t('common.scan')}
     </Button>
   );
 
@@ -148,7 +139,7 @@ export function QrScannerButton({
         <Tooltip>
           {/* A disabled button fires no pointer events, so the tooltip hangs on a wrapper. */}
           <TooltipTrigger render={<span className="inline-flex" tabIndex={0} />}>{button}</TooltipTrigger>
-          <TooltipContent>摄像头需要通过 HTTPS 访问本站</TooltipContent>
+          <TooltipContent>{t('common.cameraNeedsHttps')}</TooltipContent>
         </Tooltip>
       )}
       <Dialog open={open} onOpenChange={setOpen}>

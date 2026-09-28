@@ -11,8 +11,10 @@ import {
   PlusIcon,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import type { TFunction } from 'i18next';
 import { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { OptionSelect } from '@/components/option-select';
 import { ClearButton } from '@/components/clear-button';
@@ -31,16 +33,18 @@ import {
   DEFAULT_SETTINGS,
   type OtpEntry,
   parseEntry,
+  isProblem,
   parseScanned,
 } from '@/lib/otp/entries';
+import { otpProblemText } from '@/i18n/messages';
 import { ImageReadError, readQrCodes } from '@/lib/qr/read-image';
 import { EntryCard } from '@/tools/otp/entry-card';
 import { SecretRows, type SecretRow, emptyRow, isBlank } from '@/tools/otp/secret-rows';
 import { addEntries, clearEntries, restoreEntries, useOtpEntries } from '@/tools/otp/store';
 
 const ALGORITHM_OPTIONS = ALGORITHMS.map((value) => ({ value, label: value }));
-const DIGIT_OPTIONS = ['6', '7', '8'].map((value) => ({ value, label: `${value} 位` }));
-const PERIOD_OPTIONS = ['30', '60'].map((value) => ({ value, label: `${value} 秒` }));
+const DIGITS = ['6', '7', '8'];
+const PERIODS = ['30', '60'];
 
 /** An image that could not be imported, and why. */
 interface Problem {
@@ -53,29 +57,36 @@ function imageFiles(files: Iterable<File>): File[] {
 }
 
 /** Screenshots pasted from the clipboard all arrive as `image.png`. */
-function imageName(file: File, pasted: boolean): string {
-  return pasted ? '粘贴的图片' : `图片 ${file.name}`;
+function imageName(t: TFunction, file: File, pasted: boolean): string {
+  return pasted ? t('otp.pastedImage') : t('otp.image', { name: file.name });
 }
 
-async function scanImages(files: File[], pasted: boolean): Promise<{ entries: OtpEntry[]; problems: Problem[] }> {
+async function scanImages(
+  t: TFunction,
+  files: File[],
+  pasted: boolean
+): Promise<{ entries: OtpEntry[]; problems: Problem[] }> {
   const entries: OtpEntry[] = [];
   const problems: Problem[] = [];
   for (const file of files) {
-    const source = imageName(file, pasted);
+    const source = imageName(t, file, pasted);
     let texts: string[];
     try {
       texts = await readQrCodes(file);
     } catch (error) {
-      problems.push({ source, message: error instanceof ImageReadError ? error.message : '识别失败' });
+      problems.push({
+        source,
+        message: error instanceof ImageReadError ? t('common.imageUnreadable') : t('common.readFailed'),
+      });
       continue;
     }
     if (texts.length === 0) {
-      problems.push({ source, message: '没有找到二维码，请截取更清晰或更完整的二维码' });
+      problems.push({ source, message: t('otp.noQrFound') });
     }
     for (const text of texts) {
       const parsed = parseScanned(text);
-      if (typeof parsed === 'string') {
-        problems.push({ source, message: parsed });
+      if (isProblem(parsed)) {
+        problems.push({ source, message: otpProblemText(t, parsed) });
       } else {
         entries.push(parsed);
       }
@@ -84,13 +95,13 @@ async function scanImages(files: File[], pasted: boolean): Promise<{ entries: Ot
   return { entries, problems };
 }
 
-function reportAdded(entries: OtpEntry[]): void {
+function reportAdded(t: TFunction, entries: OtpEntry[]): void {
   const { added, duplicates } = addEntries(entries);
   if (added > 0) {
-    toast.success(`已添加 ${added} 个`);
+    toast.success(t('otp.added', { count: added }));
   }
   if (duplicates > 0) {
-    toast.info(`${duplicates} 个已在列表中，已跳过`);
+    toast.info(t('otp.duplicates', { count: duplicates }));
   }
 }
 
@@ -101,6 +112,7 @@ interface AddCardProps {
 
 /** The input rows live in the page, so clearing the tool also clears what was typed but not added. */
 function AddCard({ rows, setRows }: AddCardProps) {
+  const { t } = useTranslation();
   const [focusId, setFocusId] = useState<number | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -119,13 +131,13 @@ function AddCard({ rows, setRows }: AddCardProps) {
     const failed: SecretRow[] = [];
     for (const row of filled) {
       const parsed = parseEntry(row, settings);
-      if (typeof parsed === 'string') {
-        failed.push({ ...row, error: parsed });
+      if (isProblem(parsed)) {
+        failed.push({ ...row, error: otpProblemText(t, parsed) });
       } else {
         entries.push(parsed);
       }
     }
-    reportAdded(entries);
+    reportAdded(t, entries);
     // Rows that failed stay, each with its reason, so they can be fixed; the rest are cleared.
     setRows(failed.length > 0 ? failed : [emptyRow()]);
     setProblems([]);
@@ -144,8 +156,8 @@ function AddCard({ rows, setRows }: AddCardProps) {
     }
     setScanning(true);
     try {
-      const result = await scanImages(files, pasted);
-      reportAdded(result.entries);
+      const result = await scanImages(t, files, pasted);
+      reportAdded(t, result.entries);
       setProblems(result.problems);
     } finally {
       setScanning(false);
@@ -188,19 +200,17 @@ function AddCard({ rows, setRows }: AddCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ListPlusIcon className="size-4 text-brand" />
-          添加密钥
+          {t('otp.addTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
         <SecretRows rows={rows} onChange={setRows} onSubmit={add} focusId={focusId} onAddRow={addRow} />
-        <p className="text-xs text-muted-foreground">粘贴多行文本会自动拆成多行。</p>
+        <p className="text-xs text-muted-foreground">{t('otp.pasteHint')}</p>
 
         {problems.length > 0 && (
           <ul className="grid gap-1 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {problems.map((problem, index) => (
-              <li key={index}>
-                {problem.source}：{problem.message}
-              </li>
+              <li key={index}>{t('otp.problem', { source: problem.source, message: problem.message })}</li>
             ))}
           </ul>
         )}
@@ -208,12 +218,12 @@ function AddCard({ rows, setRows }: AddCardProps) {
         <Collapsible className="grid gap-3">
           <CollapsibleTrigger className="group flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground">
             <ChevronDownIcon className="size-4 transition-transform group-data-panel-open:rotate-180" />
-            高级参数
+            {t('otp.advanced')}
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field>
-                <FieldLabel htmlFor={`${ids}-algorithm`}>算法</FieldLabel>
+                <FieldLabel htmlFor={`${ids}-algorithm`}>{t('otp.algorithm')}</FieldLabel>
                 <OptionSelect
                   id={`${ids}-algorithm`}
                   value={algorithm}
@@ -222,22 +232,32 @@ function AddCard({ rows, setRows }: AddCardProps) {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor={`${ids}-digits`}>位数</FieldLabel>
-                <OptionSelect id={`${ids}-digits`} value={digits} options={DIGIT_OPTIONS} onChange={setDigits} />
+                <FieldLabel htmlFor={`${ids}-digits`}>{t('otp.digits')}</FieldLabel>
+                <OptionSelect
+                  id={`${ids}-digits`}
+                  value={digits}
+                  options={DIGITS.map((value) => ({ value, label: t('common.digits', { count: Number(value) }) }))}
+                  onChange={setDigits}
+                />
               </Field>
               <Field>
-                <FieldLabel htmlFor={`${ids}-period`}>周期</FieldLabel>
-                <OptionSelect id={`${ids}-period`} value={period} options={PERIOD_OPTIONS} onChange={setPeriod} />
+                <FieldLabel htmlFor={`${ids}-period`}>{t('otp.period')}</FieldLabel>
+                <OptionSelect
+                  id={`${ids}-period`}
+                  value={period}
+                  options={PERIODS.map((value) => ({ value, label: t('common.seconds', { count: Number(value) }) }))}
+                  onChange={setPeriod}
+                />
               </Field>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">仅在服务方明确要求时修改。</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t('otp.advancedHint')}</p>
           </CollapsibleContent>
         </Collapsible>
 
         <div className="grid grid-cols-2 gap-2">
           <Button onClick={add} disabled={filled.length === 0}>
             <PlusIcon data-icon="inline-start" />
-            添加
+            {t('otp.add')}
           </Button>
           <Button variant="outline" onClick={() => fileInput.current?.click()} disabled={scanning}>
             {scanning ? (
@@ -245,7 +265,7 @@ function AddCard({ rows, setRows }: AddCardProps) {
             ) : (
               <ImageIcon data-icon="inline-start" />
             )}
-            从截图导入
+            {t('otp.importScreenshot')}
           </Button>
         </div>
         <input
@@ -260,13 +280,14 @@ function AddCard({ rows, setRows }: AddCardProps) {
             event.target.value = '';
           }}
         />
-        <p className="text-xs text-muted-foreground">也可以粘贴或拖入二维码截图。</p>
+        <p className="text-xs text-muted-foreground">{t('otp.dropHint')}</p>
       </CardContent>
     </Card>
   );
 }
 
 export default function OtpTool() {
+  const { t, i18n } = useTranslation();
   const entries = useOtpEntries();
   const [rows, setRows] = useState<SecretRow[]>(() => [emptyRow()]);
   // Remounting the add card resets its own state too: image import errors and advanced settings.
@@ -291,28 +312,27 @@ export default function OtpTool() {
   return (
     <ToolPage
       icon={KeyRoundIcon}
-      title="2FA"
-      description="根据 2FA 密钥生成验证码。密钥只在当前标签页的内存中，刷新即清空。"
+      title={t('tools.otp.title')}
+      description={t('otp.description')}
       actions={<ClearButton disabled={entries.length === 0 && rows.every(isBlank)} onClear={clear} />}
     >
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="grid gap-4">
           <AddCard key={addCardKey} rows={rows} setRows={setRows} />
           <Note icon={InfoIcon}>
-            <p>
-              适合临时、应急使用。如果在同一台电脑上既输入密码又生成验证码，两步验证就失去了“第二因素”的意义；重要账户请使用手机上的验证器
-              App。
-            </p>
+            <p>{t('otp.tempUse')}</p>
           </Note>
         </div>
 
-        <section aria-label="验证码" className="grid gap-3">
+        <section aria-label={t('otp.codes')} className="grid gap-3">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
               <ClockIcon className="size-4" />
-              本机时间 {new Date(now).toLocaleTimeString('zh-CN', { hour12: false })}
+              {t('otp.localTime', { time: new Date(now).toLocaleTimeString(i18n.language, { hour12: false }) })}
               <span className="text-xs">
-                （{[formatUtcOffset(new Date(now).getTimezoneOffset()), zone].filter(Boolean).join(' · ')}）
+                {t('otp.timeZone', {
+                  zone: [formatUtcOffset(new Date(now).getTimezoneOffset()), zone].filter(Boolean).join(' · '),
+                })}
               </span>
             </p>
             <div className="ml-auto flex items-center gap-4">
@@ -320,7 +340,7 @@ export default function OtpTool() {
                 <Switch id={`${ids}-hide`} checked={hidden} onCheckedChange={setHidden} />
                 <Label htmlFor={`${ids}-hide`} className="text-sm text-muted-foreground">
                   <EyeOffIcon className="size-4" />
-                  隐藏验证码
+                  {t('otp.hideCodes')}
                 </Label>
               </div>
             </div>
@@ -329,7 +349,7 @@ export default function OtpTool() {
           {entries.length === 0 ? (
             <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
               <KeyRoundIcon className="size-8 opacity-40" />
-              添加密钥后，验证码会显示在这里。点击验证码即可复制。
+              {t('otp.empty')}
             </div>
           ) : (
             <ul className="grid gap-3">
@@ -350,9 +370,7 @@ export default function OtpTool() {
             </ul>
           )}
 
-          <p className="text-xs text-muted-foreground">
-            验证码按 UTC 计算。总是无效时，请检查系统时间和时区是否自动设置。
-          </p>
+          <p className="text-xs text-muted-foreground">{t('otp.utcNote')}</p>
         </section>
       </div>
     </ToolPage>

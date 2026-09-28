@@ -74,18 +74,18 @@ describe('parseLine', () => {
   });
 
   it('explains what it does not support', () => {
-    expect(parseLine('otpauth://hotp/x?secret=JBSWY3DPEHPK3PXP&counter=1')).toMatch('HOTP');
-    expect(parseLine('otpauth-migration://offline?data=abc')).toMatch('批量导出');
-    expect(parseLine('not a secret!')).toMatch('Base32');
+    expect(parseLine('otpauth://hotp/x?secret=JBSWY3DPEHPK3PXP&counter=1')).toEqual({ problem: 'hotp' });
+    expect(parseLine('otpauth-migration://offline?data=abc')).toEqual({ problem: 'migration' });
+    expect(parseLine('not a secret!')).toEqual({ problem: 'base32' });
   });
 });
 
 describe('parseScanned', () => {
   it('accepts key URIs only', () => {
     expect(parseScanned(' otpauth://totp/x?secret=JBSWY3DPEHPK3PXP ')).toMatchObject({ secret: 'JBSWY3DPEHPK3PXP' });
-    expect(parseScanned('JBSWY3DPEHPK3PXP')).toMatch('不是两步验证');
-    expect(parseScanned('https://example.com')).toMatch('不是两步验证');
-    expect(parseScanned('otpauth-migration://offline?data=abc')).toMatch('批量导出');
+    expect(parseScanned('JBSWY3DPEHPK3PXP')).toEqual({ problem: 'notOtp' });
+    expect(parseScanned('https://example.com')).toEqual({ problem: 'notOtp' });
+    expect(parseScanned('otpauth-migration://offline?data=abc')).toEqual({ problem: 'migration' });
   });
 });
 
@@ -108,7 +108,7 @@ describe('parseEntry', () => {
   });
 
   it('asks for a missing secret', () => {
-    expect(parseEntry({ name: 'GitHub', secret: '  ' })).toMatch('请输入密钥');
+    expect(parseEntry({ name: 'GitHub', secret: '  ' })).toEqual({ problem: 'emptySecret' });
   });
 });
 

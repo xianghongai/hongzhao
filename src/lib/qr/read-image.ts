@@ -70,6 +70,7 @@ export async function readQrCodesFrom(
   return [...new Set(texts.filter((text) => text !== ''))];
 }
 
+/** The image itself could not be decoded, as opposed to holding no QR code. */
 export class ImageReadError extends Error {}
 
 /** Reads the QR codes in an image file or pasted screenshot. */
@@ -78,7 +79,7 @@ export async function readQrCodes(image: Blob): Promise<string[]> {
   try {
     bitmap = await createImageBitmap(image);
   } catch {
-    throw new ImageReadError('无法读取这张图片');
+    throw new ImageReadError('unreadable image');
   }
   try {
     return await readQrCodesFrom(bitmap, bitmap.width, bitmap.height);

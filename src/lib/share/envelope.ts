@@ -39,13 +39,40 @@ const NONCE_BYTES = 12;
 
 export type EnvelopeErrorCode = 'format' | 'key' | 'decrypt';
 
+/** Why an envelope or key was rejected; the interface turns it into words in the reader's language. */
+export type EnvelopeErrorReason =
+  | 'foreign'
+  | 'unreadable'
+  | 'corrupt'
+  | 'notBase64url'
+  | 'truncated'
+  | 'unsupportedAlg'
+  | 'ciphertextShort'
+  | 'keyFormat'
+  | 'keyLength'
+  | 'publicKeyInvalid'
+  | 'wrongKey'
+  | 'wrongPrivateKey';
+
+/** Which key a key error is about. */
+export type KeyKind = 'key' | 'publicKey' | 'privateKey';
+
+export interface EnvelopeErrorDetail {
+  alg?: string;
+  keyKind?: KeyKind;
+}
+
 export class EnvelopeError extends Error {
   readonly code: EnvelopeErrorCode;
+  readonly reason: EnvelopeErrorReason;
+  readonly detail: EnvelopeErrorDetail;
 
-  constructor(code: EnvelopeErrorCode, message: string) {
-    super(message);
+  constructor(code: EnvelopeErrorCode, reason: EnvelopeErrorReason, detail: EnvelopeErrorDetail = {}) {
+    super(reason);
     this.name = 'EnvelopeError';
     this.code = code;
+    this.reason = reason;
+    this.detail = detail;
   }
 }
 
@@ -76,14 +103,14 @@ function unpack(bytes: Uint8Array): string {
   } catch {
     // Falls through to the format error below.
   }
-  throw new EnvelopeError('format', '内容已损坏，无法解码');
+  throw new EnvelopeError('format', 'corrupt');
 }
 
 function decodeBase64url(text: string): Uint8Array {
   try {
     return base64urlnopad.decode(text);
   } catch {
-    throw new EnvelopeError('format', '内容不是有效的 Base64URL 编码');
+    throw new EnvelopeError('format', 'notBase64url');
   }
 }
 
@@ -102,16 +129,16 @@ function envelope(alg: string | null, data: Uint8Array): string {
   return alg === null ? encoded : `alg=${alg}&${encoded}`;
 }
 
-/** Decodes 32 bytes of Base64URL key material, naming it `what` (密钥, 公钥 or 私钥) in errors. */
-function decodeKeyBytes(text: string, what: string): Uint8Array {
+/** Decodes 32 bytes of Base64URL key material; errors name which key it was. */
+function decodeKeyBytes(text: string, keyKind: KeyKind): Uint8Array {
   let bytes: Uint8Array;
   try {
     bytes = base64urlnopad.decode(text.trim());
   } catch {
-    throw new EnvelopeError('key', `${what}格式不正确`);
+    throw new EnvelopeError('key', 'keyFormat', { keyKind });
   }
   if (bytes.length !== KEY_BYTES) {
-    throw new EnvelopeError('key', `${what}长度不正确`);
+    throw new EnvelopeError('key', 'keyLength', { keyKind });
   }
   return bytes;
 }
@@ -119,7 +146,7 @@ function decodeKeyBytes(text: string, what: string): Uint8Array {
 /** Whether `text` has the shape of a key: Base64URL that decodes to 256 bits. */
 export function isKey(text: string): boolean {
   try {
-    decodeKeyBytes(text, '密钥');
+    decodeKeyBytes(text, 'key');
     return true;
   } catch {
     return false;
@@ -145,7 +172,7 @@ export function encodePlain(text: string): string {
 
 export function encodeEncrypted(text: string, key: string): string {
   const nonce = randomBytes(NONCE_BYTES);
-  const sealed = gcm(decodeKeyBytes(key, '密钥'), nonce, strToU8(ALG_KEY)).encrypt(pack(text));
+  const sealed = gcm(decodeKeyBytes(key, 'key'), nonce, strToU8(ALG_KEY)).encrypt(pack(text));
   return envelope(ALG_KEY, concat(nonce, sealed));
 }
 
@@ -154,7 +181,7 @@ export function parseEnvelope(text: string): ParsedEnvelope {
   const params = new URLSearchParams(text.trim());
   const data = params.get('data');
   if (data === null || data === '') {
-    throw new EnvelopeError('format', '链接内容不完整，可能在复制或传输时被截断');
+    throw new EnvelopeError('format', 'truncated');
   }
   const alg = params.get('alg');
   switch (alg) {
@@ -165,21 +192,21 @@ export function parseEnvelope(text: string): ParsedEnvelope {
     case ALG_PUBLIC:
       return { encrypted: true, scheme: 'public', data: decodeBase64url(data) };
     default:
-      throw new EnvelopeError('format', `不支持的加密方式：${alg}`);
+      throw new EnvelopeError('format', 'unsupportedAlg', { alg });
   }
 }
 
 export function decrypt(data: Uint8Array, key: string): string {
-  const keyBytes = decodeKeyBytes(key, '密钥');
+  const keyBytes = decodeKeyBytes(key, 'key');
   if (data.length <= NONCE_BYTES) {
-    throw new EnvelopeError('format', '密文不完整');
+    throw new EnvelopeError('format', 'ciphertextShort');
   }
   let packed: Uint8Array;
   try {
     const nonce = data.subarray(0, NONCE_BYTES);
     packed = gcm(keyBytes, nonce, strToU8(ALG_KEY)).decrypt(data.subarray(NONCE_BYTES));
   } catch {
-    throw new EnvelopeError('decrypt', '解密失败：密钥不匹配，或链接内容被改动');
+    throw new EnvelopeError('decrypt', 'wrongKey');
   }
   return unpack(packed);
 }
@@ -202,7 +229,7 @@ export function exportPrivateKey(privateKey: Uint8Array): string {
 
 /** Restores a key pair from a backed-up private key; the public key follows from it. */
 export function importPrivateKey(text: string): KeyPair {
-  const privateKey = decodeKeyBytes(text, '私钥');
+  const privateKey = decodeKeyBytes(text, 'privateKey');
   return { publicKey: base64urlnopad.encode(x25519.getPublicKey(privateKey)), privateKey };
 }
 
@@ -212,14 +239,14 @@ function derivePublicKey(shared: Uint8Array, ephemeral: Uint8Array, recipient: U
 
 /** Seals `text` so that only the holder of the private key behind `publicKey` can open it. */
 export function encodeSealedFor(text: string, publicKey: string): string {
-  const recipient = decodeKeyBytes(publicKey, '公钥');
+  const recipient = decodeKeyBytes(publicKey, 'publicKey');
   const ephemeral = x25519.keygen();
   let shared: Uint8Array;
   try {
     shared = x25519.getSharedSecret(ephemeral.secretKey, recipient);
   } catch {
     // X25519 rejects low-order points, which a malformed public key can be.
-    throw new EnvelopeError('key', '公钥无效');
+    throw new EnvelopeError('key', 'publicKeyInvalid');
   }
   const nonce = randomBytes(NONCE_BYTES);
   const sealed = gcm(derivePublicKey(shared, ephemeral.publicKey, recipient), nonce, strToU8(ALG_PUBLIC)).encrypt(
@@ -230,7 +257,7 @@ export function encodeSealedFor(text: string, publicKey: string): string {
 
 export function decryptWithPrivateKey(data: Uint8Array, privateKey: Uint8Array): string {
   if (data.length <= KEY_BYTES + NONCE_BYTES) {
-    throw new EnvelopeError('format', '密文不完整');
+    throw new EnvelopeError('format', 'ciphertextShort');
   }
   const ephemeral = data.subarray(0, KEY_BYTES);
   const nonce = data.subarray(KEY_BYTES, KEY_BYTES + NONCE_BYTES);
@@ -240,7 +267,7 @@ export function decryptWithPrivateKey(data: Uint8Array, privateKey: Uint8Array):
     const key = derivePublicKey(shared, ephemeral, x25519.getPublicKey(privateKey));
     packed = gcm(key, nonce, strToU8(ALG_PUBLIC)).decrypt(data.subarray(KEY_BYTES + NONCE_BYTES));
   } catch {
-    throw new EnvelopeError('decrypt', '解密失败：这条内容不是用本页的公钥加密的，或内容被改动');
+    throw new EnvelopeError('decrypt', 'wrongPrivateKey');
   }
   return unpack(packed);
 }

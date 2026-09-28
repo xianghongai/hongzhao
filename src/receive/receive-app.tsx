@@ -18,8 +18,10 @@ import {
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Brand } from '@/components/brand';
+import { LanguageMenu } from '@/components/language-menu';
 import { CopyButton } from '@/components/copy-button';
 import { QrPreview } from '@/components/qr-code-view';
 import { PrivacyDialog } from '@/components/privacy-dialog';
@@ -58,6 +60,8 @@ import { ImageReadError, readQrCodes } from '@/lib/qr/read-image';
 import { maskKey } from '@/lib/share/mask';
 import { formatDateTime } from '@/lib/time';
 import { classify } from '@/receive/inbox';
+import { languageQuery } from '@/i18n';
+import { envelopeErrorText } from '@/i18n/messages';
 import { takeFragment } from '@/receive/take-fragment';
 
 interface Message {
@@ -111,6 +115,7 @@ function RandomKeyPanel({
   onScan: (text: string) => string;
   onChange: () => void;
 }) {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
   const id = useId();
@@ -118,12 +123,12 @@ function RandomKeyPanel({
   if (currentKey !== null) {
     return (
       <div className="flex items-center justify-between gap-3">
-        <p className="min-w-0 truncate font-mono text-sm" aria-label="当前密钥（部分隐藏）">
+        <p className="min-w-0 truncate font-mono text-sm" aria-label={t('receive.currentKey')}>
           {maskKey(currentKey)}
         </p>
         <Button variant="outline" size="sm" onClick={onChange}>
           <RefreshCwIcon data-icon="inline-start" />
-          更换
+          {t('receive.change')}
         </Button>
       </div>
     );
@@ -135,23 +140,23 @@ function RandomKeyPanel({
       onSubmit={(event) => {
         event.preventDefault();
         if (!isKey(value)) {
-          setError('密钥格式不正确');
+          setError(t('receive.keyFormat'));
         } else if (onKey(value.trim())) {
           setValue('');
         } else {
-          setError('密钥不匹配，无法解密这条内容');
+          setError(t('receive.keyMismatch'));
         }
       }}
     >
       <Field data-invalid={error !== '' || undefined}>
         <FieldLabel htmlFor={id} className="sr-only">
-          密钥
+          {t('receive.keyLabel')}
         </FieldLabel>
         <div className="flex gap-2">
           <Input
             id={id}
             value={value}
-            placeholder="粘贴密钥"
+            placeholder={t('receive.keyPlaceholder')}
             // A link that needs a key has nothing else to do on the page.
             autoFocus={waiting}
             autoComplete="off"
@@ -166,12 +171,12 @@ function RandomKeyPanel({
           />
           <Button type="submit" disabled={value.trim() === ''}>
             <RotateCcwKeyIcon data-icon="inline-start" />
-            使用
+            {t('receive.use')}
           </Button>
           {/* Once a key is set this form unmounts, which closes the scanner and stops the camera. */}
           <QrScannerButton
-            title="扫描密钥二维码"
-            description="对准发送方页面上的密钥二维码。"
+            title={t('receive.scanKey')}
+            description={t('receive.scanKeyDescription')}
             onDetect={(text) => {
               const message = onScan(text);
               toast(message);
@@ -187,6 +192,7 @@ function RandomKeyPanel({
 
 /** Shows the private key for the owner's own backup, masked until asked for. */
 function ViewPrivateKeyDialog({ privateKey }: { privateKey: () => string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const text = open ? privateKey() : '';
@@ -201,28 +207,28 @@ function ViewPrivateKeyDialog({ privateKey }: { privateKey: () => string }) {
     >
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <EyeIcon data-icon="inline-start" />
-        查看私钥
+        {t('receive.viewPrivateKey')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>私钥</DialogTitle>
-          <DialogDescription>刷新或关闭本页前备份私钥，之后可以用“导入私钥”恢复。</DialogDescription>
+          <DialogTitle>{t('receive.privateKey')}</DialogTitle>
+          <DialogDescription>{t('receive.privateKeyBackup')}</DialogDescription>
         </DialogHeader>
         <Note tone="warning" icon={ShieldAlertIcon}>
-          <p>私钥能解密所有发给这把公钥的内容。只用于自己备份，不要发给任何人。</p>
+          <p>{t('receive.privateKeyWarning')}</p>
         </Note>
         <p
           className="rounded-lg bg-muted p-3 font-mono text-xs break-all select-all"
-          aria-label={revealed ? '私钥' : '私钥（已隐藏）'}
+          aria-label={revealed ? t('receive.privateKey') : t('receive.privateKeyHidden')}
         >
           {revealed ? text : maskKey(text)}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setRevealed((current) => !current)}>
             {revealed ? <EyeOffIcon data-icon="inline-start" /> : <EyeIcon data-icon="inline-start" />}
-            {revealed ? '隐藏' : '显示'}
+            {revealed ? t('receive.hide') : t('receive.show')}
           </Button>
-          <CopyButton value={text} what="私钥" />
+          <CopyButton value={text} done={t('receive.privateKeyCopied')} />
         </div>
       </DialogContent>
     </Dialog>
@@ -237,6 +243,7 @@ function ImportPrivateKeyDialog({
   replacing: boolean;
   onImport: (privateKey: string) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
   const id = useId();
@@ -258,12 +265,12 @@ function ImportPrivateKeyDialog({
     >
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <ImportIcon data-icon="inline-start" />
-        导入私钥
+        {t('receive.importPrivateKey')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>导入私钥</DialogTitle>
-          <DialogDescription>粘贴之前备份的私钥，恢复对应的公钥和解密能力。</DialogDescription>
+          <DialogTitle>{t('receive.importPrivateKey')}</DialogTitle>
+          <DialogDescription>{t('receive.importDescription')}</DialogDescription>
         </DialogHeader>
         <form
           className="grid gap-4"
@@ -277,7 +284,7 @@ function ImportPrivateKeyDialog({
           }}
         >
           <Field data-invalid={invalid || undefined}>
-            <FieldLabel htmlFor={id}>私钥</FieldLabel>
+            <FieldLabel htmlFor={id}>{t('receive.privateKey')}</FieldLabel>
             <Input
               id={id}
               value={value}
@@ -289,23 +296,23 @@ function ImportPrivateKeyDialog({
               className="font-mono"
             />
             {invalid ? (
-              <FieldError>私钥格式不正确</FieldError>
+              <FieldError>{t('receive.privateKeyInvalid')}</FieldError>
             ) : (
               derived && (
                 <p className="text-sm text-muted-foreground">
-                  对应公钥 <span className="font-mono text-foreground">{maskKey(derived)}</span>
+                  {t('receive.derivedPublicKey')} <span className="font-mono text-foreground">{maskKey(derived)}</span>
                 </p>
               )
             )}
           </Field>
           {replacing && (
             <Note tone="warning" icon={TriangleAlertIcon}>
-              <p>将替换当前的公钥和私钥。</p>
+              <p>{t('receive.replaceWarning')}</p>
             </Note>
           )}
           <Button type="submit" disabled={derived === null} className="w-fit">
             <ImportIcon data-icon="inline-start" />
-            导入
+            {t('receive.import')}
           </Button>
         </form>
       </DialogContent>
@@ -328,17 +335,18 @@ function PublicKeyPanel({
   onGenerate: () => void;
   onImport: (privateKey: string) => void;
 }) {
+  const { t } = useTranslation();
   // The code opens the share tool with this key filled in, so the sender can scan it with a phone camera.
   const qr = publicKey ? encodeQr(publicKeyLink(publicKey), 'M') : null;
 
   if (publicKey === null) {
     return (
       <div className="grid gap-3">
-        <p className="text-sm text-muted-foreground">让发送方用你的公钥加密，私钥不离开本页，无需传递密钥。</p>
+        <p className="text-sm text-muted-foreground">{t('receive.publicIntro')}</p>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={onGenerate}>
             <UserRoundKeyIcon data-icon="inline-start" />
-            生成公钥
+            {t('receive.generatePublicKey')}
           </Button>
           <ImportPrivateKeyDialog replacing={false} onImport={onImport} />
         </div>
@@ -348,24 +356,25 @@ function PublicKeyPanel({
 
   return (
     <div className="grid gap-4">
-      <p className="text-sm text-muted-foreground">
-        把公钥交给发送方，或让对方扫描二维码直接打开发送页。收到的内容请在本页粘贴或扫码接收。
-      </p>
+      <p className="text-sm text-muted-foreground">{t('receive.publicShare')}</p>
       <p className="rounded-lg bg-muted p-3 font-mono text-xs break-all select-all">{publicKey}</p>
-      <CopyButton value={publicKey} what="公钥" className="w-fit" />
-      {qr?.ok && <QrPreview qr={qr.qr} label="公钥二维码" filename="public-key" imageClassName="max-w-48" />}
+      <CopyButton value={publicKey} done={t('receive.publicKeyCopied')} className="w-fit" />
+      {qr?.ok && (
+        <QrPreview qr={qr.qr} label={t('receive.publicKeyQr')} filename="public-key" imageClassName="max-w-48" />
+      )}
       <div className="flex flex-wrap gap-2">
         <ViewPrivateKeyDialog privateKey={privateKey} />
         <ImportPrivateKeyDialog replacing onImport={onImport} />
       </div>
       <Note tone="warning" icon={TriangleAlertIcon}>
-        <p>私钥只在本页内存中。刷新或关闭本页前，请先备份私钥。</p>
+        <p>{t('receive.privateKeyNote')}</p>
       </Note>
     </div>
   );
 }
 
 function MessageCard({ message }: { message: Message }) {
+  const { t } = useTranslation();
   const url = singleUrl(message.text);
 
   return (
@@ -377,7 +386,7 @@ function MessageCard({ message }: { message: Message }) {
           ) : (
             <InboxIcon className="size-4 text-brand" />
           )}
-          {message.encrypted ? '已解密' : '收到的内容'}
+          {message.encrypted ? t('receive.decrypted') : t('receive.received')}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -389,7 +398,7 @@ function MessageCard({ message }: { message: Message }) {
           {url && (
             <a href={url} target="_blank" rel="noreferrer noopener" className={buttonVariants({ variant: 'outline' })}>
               <ExternalLinkIcon data-icon="inline-start" />
-              打开链接
+              {t('receive.openLink')}
             </a>
           )}
           <time dateTime={message.at.toISOString()} className="ml-auto text-sm text-muted-foreground tabular-nums">
@@ -407,6 +416,7 @@ function MessageCard({ message }: { message: Message }) {
  * Nothing outlives the tab.
  */
 export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
+  const { t } = useTranslation();
   const [key, setKey] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   // Only the latest encrypted content waits for a key; each new one replaces the last.
@@ -451,25 +461,26 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
     const waiting = session.current.pending;
     const opened = waiting === null ? null : tryDecrypt(waiting, next);
     if (waiting !== null && opened === null) {
-      return { accepted: false, message: '密钥不匹配，无法解密这条内容' };
+      return { accepted: false, message: t('receive.keyMismatch') };
     }
     session.current.key = next;
     setKey(next);
     setNotice('');
     if (opened === null) {
-      return { accepted: true, message: '已设置密钥' };
+      return { accepted: true, message: t('receive.keySet') };
     }
     addMessage(opened, true);
     setWaiting(null);
-    return { accepted: true, message: '已设置密钥并解密' };
+    return { accepted: true, message: t('receive.keySetDecrypted') };
   };
 
   /** Handles one scanned or pasted text and says what happened. */
   const receive = (text: string): string => {
     const received = classify(text);
     if (received.kind === 'invalid') {
-      setNotice(received.message);
-      return received.message;
+      const message = envelopeErrorText(t, received.error);
+      setNotice(message);
+      return message;
     }
     if (received.kind === 'key') {
       // Keys belong in the key card, but one that ends up here is handled by the same rule.
@@ -477,16 +488,13 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
     }
     const { envelope, parsed } = received;
     if (session.current.seen.has(envelope)) {
-      return '这条内容已经接收过';
+      return t('receive.duplicate');
     }
     if (parsed.encrypted && parsed.scheme === 'public') {
       // Sealed to a public key: only the page holding its private key can open it, now or later,
       // so it neither waits nor counts as seen; pasted into the right page it should still work.
       const privateKey = session.current.privateKey;
-      const message =
-        privateKey === null
-          ? '这条内容用公钥加密，只有生成该公钥的页面能解密。请在那个页面里粘贴链接或扫码。'
-          : '这条内容不是用本页的公钥加密的。';
+      const message = privateKey === null ? t('receive.publicNoPage') : t('receive.publicWrongPage');
       let text: string;
       try {
         if (privateKey === null) {
@@ -500,27 +508,27 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
       session.current.seen.add(envelope);
       addMessage(text, true);
       setNotice('');
-      return '已接收并解密';
+      return t('receive.receivedDecrypted');
     }
     session.current.seen.add(envelope);
     if (!parsed.encrypted) {
       addMessage(parsed.text, false);
       setNotice('');
-      return '已接收';
+      return t('receive.receivedPlain');
     }
     const current = session.current.key;
     const opened = current === null ? null : tryDecrypt(parsed.data, current);
     if (opened !== null) {
       addMessage(opened, true);
       setNotice('');
-      return '已接收并解密';
+      return t('receive.receivedDecrypted');
     }
     setWaiting(parsed.data);
     if (current === null) {
-      return '已接收，设置密钥后解密';
+      return t('receive.receivedWaiting');
     }
-    setNotice('当前密钥无法解密新收到的内容，发送方可能更换了密钥。');
-    return '当前密钥无法解密这条内容';
+    setNotice(t('receive.keyChanged'));
+    return t('receive.keyCannotOpen');
   };
 
   const importImages = async (files: File[]) => {
@@ -529,11 +537,11 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
       try {
         texts = await readQrCodes(file);
       } catch (error) {
-        toast.error(error instanceof ImageReadError ? error.message : '识别失败');
+        toast.error(error instanceof ImageReadError ? t('common.imageUnreadable') : t('common.readFailed'));
         continue;
       }
       if (texts.length === 0) {
-        toast.error('图片里没有找到二维码');
+        toast.error(t('common.noQrInImage'));
       }
       for (const text of texts) {
         toast(receive(text));
@@ -607,7 +615,7 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
         <div className="flex min-h-dvh flex-col">
           <header className="border-b">
             <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-4 px-4">
-              <a href="../" aria-label="打开泥上首页" className="rounded-md">
+              <a href={`../${languageQuery()}`} aria-label={t('receive.openHome')} className="rounded-md">
                 <Brand />
               </a>
               <div className="ml-auto">
@@ -622,11 +630,9 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <KeyRoundIcon className="size-4 text-brand" />
-                    解密
+                    {t('receive.decrypt')}
                   </CardTitle>
-                  {key === null && pending !== null && (
-                    <CardDescription>内容已加密，请输入发送方提供的密钥。</CardDescription>
-                  )}
+                  {key === null && pending !== null && <CardDescription>{t('receive.waiting')}</CardDescription>}
                 </CardHeader>
                 <CardContent>
                   {expanded ? (
@@ -634,11 +640,11 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                       <TabsList className="w-full">
                         <TabsTrigger value="key">
                           <RotateCcwKeyIcon data-icon="inline-start" />
-                          随机密钥
+                          {t('receive.randomKey')}
                         </TabsTrigger>
                         <TabsTrigger value="public">
                           <UserRoundKeyIcon data-icon="inline-start" />
-                          公钥
+                          {t('receive.publicKey')}
                         </TabsTrigger>
                       </TabsList>
                       <TabsContent value="key">{randomKeyPanel}</TabsContent>
@@ -651,7 +657,7 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                           onGenerate={() => applyKeyPair(generateKeyPair())}
                           onImport={(text) => {
                             applyKeyPair(importPrivateKey(text));
-                            toast('已导入私钥');
+                            toast(t('receive.imported'));
                           }}
                         />
                       </TabsContent>
@@ -669,19 +675,19 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <InboxIcon className="size-4 text-brand" />
-                    接收
+                    {t('receive.receive')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-3">
                   <div className="flex flex-wrap gap-2">
                     <QrScannerButton
-                      title="扫描二维码"
-                      description="对准内容二维码，可以连续扫描。"
+                      title={t('receive.scanContent')}
+                      description={t('receive.scanContentDescription')}
                       onDetect={receive}
                     />
                     <Button variant="outline" onClick={() => fileInput.current?.click()}>
                       <ImageIcon data-icon="inline-start" />
-                      从图片识别
+                      {t('receive.fromImage')}
                     </Button>
                     <input
                       ref={fileInput}
@@ -707,16 +713,16 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                   >
                     <Textarea
                       name="link"
-                      aria-label="粘贴链接或内容"
+                      aria-label={t('receive.pasteLabel')}
                       value={link}
-                      placeholder="或粘贴链接或内容"
+                      placeholder={t('receive.pastePlaceholder')}
                       spellCheck={false}
                       onChange={(event) => setLink(event.target.value)}
                       className="min-h-16 font-mono text-xs break-all"
                     />
                     <Button type="submit" variant="outline" disabled={link.trim() === ''} className="w-fit">
                       <FileKey data-icon="inline-start" />
-                      读取
+                      {t('receive.read')}
                     </Button>
                   </form>
                 </CardContent>
@@ -751,19 +757,20 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                 onClick={() => setExpanded(true)}
               >
                 <InboxIcon data-icon="inline-start" />
-                接收更多内容
+                {t('receive.more')}
               </Button>
             )}
 
             {active && (
               <Note icon={InfoIcon}>
-                <p>刷新或关闭本页后，内容和密钥都不会保留。</p>
+                <p>{t('receive.volatile')}</p>
               </Note>
             )}
           </main>
 
-          <footer className="mx-auto w-full max-w-2xl px-4 py-6">
+          <footer className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground">
             <PrivacyDialog />
+            <LanguageMenu />
           </footer>
         </div>
         <Toaster position="bottom-center" />

@@ -2,6 +2,7 @@ import { cn } from 'cn';
 import { CheckIcon, CopyIcon, DownloadIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -34,6 +35,7 @@ export function QrCodeView({ qr, label, className }: QrCodeViewProps) {
 }
 
 function CopyImageButton({ qr }: { qr: QrMatrix }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const available = canCopyImages();
 
@@ -48,16 +50,16 @@ function CopyImageButton({ qr }: { qr: QrMatrix }) {
   const copy = async () => {
     if (await copyPng(qr)) {
       setCopied(true);
-      toast.success('已复制二维码图片');
+      toast.success(t('common.imageCopied'));
     } else {
-      toast.error('复制失败，请改用下载');
+      toast.error(t('common.copyImageFailed'));
     }
   };
 
   const button = (
     <Button variant="outline" size="sm" disabled={!available} onClick={() => void copy()}>
       {copied ? <CheckIcon data-icon="inline-start" /> : <CopyIcon data-icon="inline-start" />}
-      复制图片
+      {t('common.copyImage')}
     </Button>
   );
 
@@ -68,7 +70,7 @@ function CopyImageButton({ qr }: { qr: QrMatrix }) {
     <Tooltip>
       {/* A disabled button fires no pointer events, so the tooltip hangs on a wrapper. */}
       <TooltipTrigger render={<span className="inline-flex" tabIndex={0} />}>{button}</TooltipTrigger>
-      <TooltipContent>复制图片需要通过 HTTPS 访问本站</TooltipContent>
+      <TooltipContent>{t('common.copyImageNeedsHttps')}</TooltipContent>
     </Tooltip>
   );
 }
@@ -99,14 +101,13 @@ interface QrPreviewProps {
 
 /** The code, a density warning when scanning may struggle, and download buttons. */
 export function QrPreview({ qr, label, filename, imageClassName }: QrPreviewProps) {
+  const { t } = useTranslation();
   return (
     <div className="grid gap-3">
       <div className={cn('w-full', imageClassName)}>
         <QrCodeView qr={qr} label={label} />
       </div>
-      {qr.version > DENSE_VERSION && (
-        <p className="text-xs text-brand">码点较密，屏幕扫码可能吃力；可以精简内容或降低纠错等级。</p>
-      )}
+      {qr.version > DENSE_VERSION && <p className="text-xs text-brand">{t('common.denseQr')}</p>}
       <QrDownloadButtons qr={qr} filename={filename} />
     </div>
   );

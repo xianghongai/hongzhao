@@ -1,12 +1,14 @@
 import { MoonIcon, SunIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { setTheme, useTheme } from '@/lib/theme';
 
 export function ThemeToggle() {
+  const { t } = useTranslation();
   const theme = useTheme();
-  const label = theme === 'dark' ? '切换到浅色' : '切换到深色';
+  const label = theme === 'dark' ? t('header.toLight') : t('header.toDark');
 
   return (
     <Tooltip>

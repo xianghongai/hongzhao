@@ -1,6 +1,7 @@
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/lib/clipboard';
@@ -10,11 +11,12 @@ type ButtonProps = React.ComponentProps<typeof Button>;
 interface CopyButtonProps extends Omit<ButtonProps, 'onClick' | 'children'> {
   value: string;
   label?: string;
-  /** Names what was copied in the confirmation toast. */
-  what?: string;
+  /** The confirmation toast, naming what was copied, such as “Link copied”. */
+  done?: string;
 }
 
-export function CopyButton({ value, label = '复制', what = '内容', variant = 'outline', ...props }: CopyButtonProps) {
+export function CopyButton({ value, label, done, variant = 'outline', ...props }: CopyButtonProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -28,16 +30,16 @@ export function CopyButton({ value, label = '复制', what = '内容', variant =
   const copy = async () => {
     if (await copyText(value)) {
       setCopied(true);
-      toast.success(`已复制${what}`);
+      toast.success(done ?? t('common.copied'));
     } else {
-      toast.error('复制失败，请手动选择后复制');
+      toast.error(t('common.copyFailed'));
     }
   };
 
   return (
     <Button variant={variant} onClick={copy} disabled={value === ''} {...props}>
       {copied ? <CheckIcon data-icon="inline-start" /> : <CopyIcon data-icon="inline-start" />}
-      {label}
+      {label ?? t('common.copy')}
     </Button>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useTranslation } from 'react-i18next';
 
 import { useOtpEntries } from '@/tools/otp/store';
 
@@ -11,6 +12,7 @@ const UPDATE_TOAST = 'pwa-update';
  * the switch reloads the page, which clears everything held in memory.
  */
 function PwaPromptInner() {
+  const { t } = useTranslation();
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
@@ -20,26 +22,24 @@ function PwaPromptInner() {
 
   useEffect(() => {
     if (offlineReady) {
-      toast.success('已可离线使用');
+      toast.success(t('pwa.offlineReady'));
       setOfflineReady(false);
     }
-  }, [offlineReady, setOfflineReady]);
+  }, [offlineReady, setOfflineReady, t]);
 
   useEffect(() => {
     if (!needRefresh) {
       toast.dismiss(UPDATE_TOAST);
       return;
     }
-    toast.info('有新版本', {
+    toast.info(t('pwa.update'), {
       id: UPDATE_TOAST,
       duration: Infinity,
-      description: holdsSecrets
-        ? '刷新后生效。刷新会清空已添加的两步验证密钥，可以用完再刷新。'
-        : '刷新后生效，页面上已输入的内容会被清空。',
-      action: { label: '刷新', onClick: () => void updateServiceWorker(true) },
-      cancel: { label: '稍后', onClick: () => setNeedRefresh(false) },
+      description: holdsSecrets ? t('pwa.updateWithSecrets') : t('pwa.updatePlain'),
+      action: { label: t('pwa.reload'), onClick: () => void updateServiceWorker(true) },
+      cancel: { label: t('pwa.later'), onClick: () => setNeedRefresh(false) },
     });
-  }, [needRefresh, holdsSecrets, setNeedRefresh, updateServiceWorker]);
+  }, [needRefresh, holdsSecrets, setNeedRefresh, updateServiceWorker, t]);
 
   return null;
 }

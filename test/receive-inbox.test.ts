@@ -39,12 +39,12 @@ describe('classify', () => {
   });
 
   it('reports other content and broken envelopes', () => {
-    expect(classify('https://example.com')).toEqual({ kind: 'invalid', message: '不是“链接传送”生成的内容' });
+    expect(classify('https://example.com')).toMatchObject({ kind: 'invalid', error: { reason: 'foreign' } });
     expect(classify('WIFI:T:WPA;S:x;;')).toMatchObject({ kind: 'invalid' });
-    expect(classify('x.AA')).toEqual({ kind: 'invalid', message: '不是“链接传送”生成的内容' });
+    expect(classify('x.AA')).toMatchObject({ kind: 'invalid', error: { reason: 'foreign' } });
     expect(classify('alg=RSA-OAEP&data=AA')).toMatchObject({
       kind: 'invalid',
-      message: expect.stringContaining('RSA-OAEP'),
+      error: { reason: 'unsupportedAlg', detail: { alg: 'RSA-OAEP' } },
     });
   });
 });

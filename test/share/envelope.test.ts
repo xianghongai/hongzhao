@@ -117,6 +117,9 @@ describe('public-key envelopes', () => {
     const parsed = parseEnvelope(encodeSealedFor('after a reload', original.publicKey));
     expect(parsed.encrypted && decryptWithPrivateKey(parsed.data, restored.privateKey)).toBe('after a reload');
     expect(codeOf(() => importPrivateKey('not a key'))).toBe('key');
+    expect(() => importPrivateKey('not a key')).toThrow(
+      expect.objectContaining({ reason: 'keyFormat', detail: { keyKind: 'privateKey' } })
+    );
   });
 });
 

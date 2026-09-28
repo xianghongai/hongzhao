@@ -5,7 +5,7 @@
 ## 不可违反的约束
 
 - **不联网**：运行时不发出网络请求。`vite.config.ts` 在构建产物中注入 CSP（`connect-src 'none'`），不得放宽；新增依赖不得在运行时加载远程资源（例如从 CDN 拉取 WASM 或字体）。
-- **不存储**：不使用 Cookie、localStorage、sessionStorage 或 IndexedDB。需要跨工具保留的状态放在模块内存中，参考 `src/tools/otp/store.ts`。
+- **不存储**：不使用 Cookie、localStorage、sessionStorage 或 IndexedDB。需要跨工具保留的状态放在模块内存中，参考 `src/tools/otp/store.ts`。手动选择的界面语言只写在网址参数 `?lang=` 里，参考 `src/i18n/index.ts`。
 - **离线缓存只放站点文件**：Service Worker 由 `vite-plugin-pwa` 生成，只预缓存构建产物。不得添加运行时缓存、后台同步或任何缓存用户内容的逻辑；只在主应用注册（`src/components/pwa-prompt.tsx`），更新必须经用户确认，因为刷新会清空内存中的密钥。
 - **不加载 WASM**：WASM 需要额外获取二进制文件并在 CSP 中加入 `'wasm-unsafe-eval'`。二维码识别因此使用原生 `BarcodeDetector` 加纯 JS 的 `jsQR`，参考 `src/lib/qr/read-image.ts`。
 - **不引用 CDN**：依赖一律从 npm 安装并随站点打包。图片以独立文件提供，`build.assetsInlineLimit` 保持为 `0`。
@@ -14,7 +14,8 @@
 
 ## 目录职责
 
-- `src/lib/`：纯函数，不依赖 React 和 DOM（`clipboard.ts`、`download.ts`、`theme.ts`、`qr/read-image.ts` 除外），全部由 `test/` 下的单元测试覆盖。
+- `src/lib/`：纯函数，不依赖 React 和 DOM（`clipboard.ts`、`download.ts`、`theme.ts`、`qr/read-image.ts` 除外），全部由 `test/` 下的单元测试覆盖。不含界面文案：出错时返回原因码，由界面层翻译，参考 `src/i18n/messages.ts`。
+- `src/i18n/`、`src/locales/`：界面多语言。`zh-CN.json` 是源文件；`zh-Hant.json` 由 `pnpm locales:hant` 从简体逐字转换生成，不手改；其他语言的键与源文件一致，由 `test/locales.test.ts` 检查。语言包不放 `public/`：那样只能用 `fetch()` 读取，会被 `connect-src 'none'` 拦截；现在通过动态 `import()` 打包成带哈希的独立脚本，属于 `script-src 'self'`，同时保留键的类型检查。
 - `src/tools/`：每个工具一个目录，在 `src/tools/registry.ts` 注册后自动出现在导航和首页。
 - `src/receive/`：接收页 `r/index.html` 的入口。接收页不注册 Service Worker，也不带 manifest，由 `vite.config.ts` 中的插件移除。
 - `public/`：站点图标。PNG 图标由 `pnpm pwa:icons` 从 `public/favicon.svg` 生成，改动图标后重新运行。标题栏标志按主题分为 `src/assets/logo-light.svg` 与 `src/assets/logo-dark.svg`。
@@ -26,7 +27,7 @@
 - Tailwind CSS v4，设计令牌在 `src/index.css` 中用 `@theme` 声明，不使用 `tailwind.config.js`。品牌色为 `brand`，默认深色主题。
 - class 合并使用 `import { cn } from 'cn'`，不使用 clsx 与 tailwind-merge。
 - 动效：微交互用 CSS 过渡；进场、列表与页面切换用 `motion/react`。应用根部使用 `MotionConfig reducedMotion="user"`，CSS 动画配合 `motion-reduce:` 关闭。
-- 界面文案使用简体中文。
+- 界面文案不写在组件里：先加到 `src/locales/zh-CN.json`，同步补齐 `en`、`ja`、`ko`，再运行 `pnpm locales:hant`；组件用 `useTranslation` 读取。品牌名与标语在所有语言下保持中文原文。
 
 ## 验证
 

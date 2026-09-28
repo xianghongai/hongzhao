@@ -110,6 +110,8 @@ export default defineConfig({
         globIgnores: ['brand/**'],
         // `r/` resolves to its own precached page; nothing should fall back to the main app.
         navigateFallback: null,
+        // A language chosen by hand travels as `?lang=`; the page behind it is the same precached file.
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^lang$/],
         cleanupOutdatedCaches: true,
         // A first install takes over the open tab at once, so it works offline without a reload.
         // Updates still wait in `waiting` until the prompt is accepted, as there is no skipWaiting.

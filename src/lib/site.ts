@@ -1,6 +1,5 @@
-// Su Shi: 泥上偶然留指爪，鸿飞那复计东西. The name and the tagline read on as one line of the poem.
-export const SITE_NAME = '泥上';
-export const SITE_TAGLINE = '偶然留指爪，鸿飞那复计东西';
+// The site name and tagline live in the locale files (`brand`). Together they read as one line of a poem by Su Shi,
+// so they stay in Chinese in every language.
 
 /**
  * The source repository, inferred from a GitHub Pages project address (`<owner>.github.io/<repo>/`),
