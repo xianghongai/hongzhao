@@ -37,7 +37,7 @@ import {
   parseScanned,
 } from '@/lib/otp/entries';
 import { otpProblemText } from '@/i18n/messages';
-import { ImageReadError, readQrCodes } from '@/lib/qr/read-image';
+import { ImageReadError, imageFiles, readQrCodes } from '@/lib/qr/read-image';
 import { EntryCard } from '@/tools/otp/entry-card';
 import { SecretRows, type SecretRow, emptyRow, isBlank } from '@/tools/otp/secret-rows';
 import { addEntries, clearEntries, restoreEntries, useOtpEntries } from '@/tools/otp/store';
@@ -50,10 +50,6 @@ const PERIODS = ['30', '60'];
 interface Problem {
   source: string;
   message: string;
-}
-
-function imageFiles(files: Iterable<File>): File[] {
-  return [...files].filter((file) => file.type.startsWith('image/'));
 }
 
 /** Screenshots pasted from the clipboard all arrive as `image.png`. */

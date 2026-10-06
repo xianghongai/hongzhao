@@ -94,6 +94,11 @@
     "tooLong": "The content exceeds what a QR code can hold. Lower the error correction level, shorten the content, or use Link Transfer.",
     "encoded": "Encoded content",
     "encodedCopied": "Encoded content copied",
+    "fromImage": "Read from image",
+    "decodedBadge": "From image",
+    "decodedExit": "Back to the form",
+    "decodedMultiple": "The image holds more than one QR code; this is the first.",
+    "decodedQrLabel": "QR code read from an image",
     "reserveShort": "It works now, but the same content may no longer fit if the site moves to a longer address.",
     "formats": {
       "text": { "label": "Text", "summary": "Scanning shows this text, ready to copy." },

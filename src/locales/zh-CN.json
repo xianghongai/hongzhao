@@ -94,6 +94,11 @@
     "tooLong": "内容超出二维码容量。可以降低纠错等级、精简内容，或改用“链接传送”。",
     "encoded": "编码内容",
     "encodedCopied": "已复制编码内容",
+    "fromImage": "从图片识别",
+    "decodedBadge": "来自图片",
+    "decodedExit": "返回表单内容",
+    "decodedMultiple": "图片里有多个二维码，这里显示的是第一个。",
+    "decodedQrLabel": "从图片识别的二维码",
     "reserveShort": "当前可以使用。若将来站点换用更长的地址，同样的内容可能放不下。",
     "formats": {
       "text": { "label": "文本", "summary": "扫码后显示这段文字，可以直接复制。" },

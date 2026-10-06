@@ -87,3 +87,8 @@ export async function readQrCodes(image: Blob): Promise<string[]> {
     bitmap.close();
   }
 }
+
+/** Keeps the images among chosen, pasted or dropped files. */
+export function imageFiles(files: Iterable<File>): File[] {
+  return [...files].filter((file) => file.type.startsWith('image/'));
+}

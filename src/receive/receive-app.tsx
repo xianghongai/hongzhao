@@ -56,7 +56,7 @@ import {
 } from '@/lib/share/envelope';
 import { publicKeyLink } from '@/lib/share/link';
 import { encodeQr } from '@/lib/qr/encode';
-import { ImageReadError, readQrCodes } from '@/lib/qr/read-image';
+import { ImageReadError, imageFiles, readQrCodes } from '@/lib/qr/read-image';
 import { maskKey } from '@/lib/share/mask';
 import { formatDateTime } from '@/lib/time';
 import { classify } from '@/receive/inbox';
@@ -92,10 +92,6 @@ function tryDecrypt(data: Uint8Array, key: string): string | null {
   } catch {
     return null;
   }
-}
-
-function imageFiles(files: Iterable<File>): File[] {
-  return [...files].filter((file) => file.type.startsWith('image/'));
 }
 
 type DecryptMode = 'key' | 'public';

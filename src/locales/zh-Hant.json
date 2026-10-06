@@ -94,6 +94,11 @@
     "tooLong": "內容超出二維碼容量。可以降低糾錯等級、精簡內容，或改用“鏈接傳送”。",
     "encoded": "編碼內容",
     "encodedCopied": "已複製編碼內容",
+    "fromImage": "從圖片識別",
+    "decodedBadge": "來自圖片",
+    "decodedExit": "返回表單內容",
+    "decodedMultiple": "圖片裡有多個二維碼，這裡顯示的是第一個。",
+    "decodedQrLabel": "從圖片識別的二維碼",
     "reserveShort": "當前可以使用。若將來站點換用更長的地址，同樣的內容可能放不下。",
     "formats": {
       "text": {
