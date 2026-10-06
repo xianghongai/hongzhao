@@ -92,7 +92,7 @@ export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: Secr
               spellCheck={false}
               onChange={(event) => update(row.id, { name: event.target.value })}
               onKeyDown={submitOnEnter}
-              className="w-28 shrink-0 text-sm sm:w-36"
+              className="w-28 shrink-0 sm:w-36 max-md:placeholder:text-xs"
             />
             <Input
               aria-label={t('otp.rowSecret', { row: index + 1 })}
@@ -105,7 +105,7 @@ export function SecretRows({ rows, onChange, onSubmit, focusId, onAddRow }: Secr
               onChange={(event) => update(row.id, { secret: event.target.value })}
               onPaste={(event) => paste(row, event)}
               onKeyDown={submitOnEnter}
-              className="min-w-0 flex-1 font-mono text-xs"
+              className="min-w-0 flex-1 font-mono max-md:placeholder:text-xs"
             />
             <Button
               variant="ghost"

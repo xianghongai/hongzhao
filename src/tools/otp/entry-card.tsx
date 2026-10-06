@@ -161,7 +161,7 @@ export function EntryCard({ entry, now, index, hidden }: EntryCardProps) {
             autoFocus
             defaultValue={entry.label}
             aria-label={t('otp.nameLabel')}
-            className="h-7 text-sm"
+            className="h-7"
             onBlur={(event) => commitRename(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {

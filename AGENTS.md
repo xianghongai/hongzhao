@@ -14,7 +14,7 @@
 
 ## 目录职责
 
-- `src/lib/`：纯函数，不依赖 React 和 DOM（`clipboard.ts`、`download.ts`、`theme.ts`、`qr/read-image.ts` 除外），全部由 `test/` 下的单元测试覆盖。不含界面文案：出错时返回原因码，由界面层翻译，参考 `src/i18n/messages.ts`。
+- `src/lib/`：纯函数，不依赖 React 和 DOM（`clipboard.ts`、`download.ts`、`prevent-zoom.ts`、`theme.ts`、`qr/read-image.ts` 除外），全部由 `test/` 下的单元测试覆盖。不含界面文案：出错时返回原因码，由界面层翻译，参考 `src/i18n/messages.ts`。
 - `src/i18n/`、`src/locales/`：界面多语言。`zh-CN.json` 是源文件；`zh-Hant.json` 由 `pnpm locales:hant` 从简体逐字转换生成，不手改；其他语言的键与源文件一致，由 `test/locales.test.ts` 检查。语言包不放 `public/`：那样只能用 `fetch()` 读取，会被 `connect-src 'none'` 拦截；现在通过动态 `import()` 打包成带哈希的独立脚本，属于 `script-src 'self'`，同时保留键的类型检查。
 - `src/tools/`：每个工具一个目录，在 `src/tools/registry.ts` 注册后自动出现在导航和首页。
 - `src/receive/`：接收页 `r/index.html` 的入口。接收页不注册 Service Worker，也不带 manifest，由 `vite.config.ts` 中的插件移除。
@@ -26,8 +26,10 @@
 
 - Tailwind CSS v4，设计令牌在 `src/index.css` 中用 `@theme` 声明，不使用 `tailwind.config.js`。品牌色为 `brand`，默认深色主题。
 - class 合并使用 `import { cn } from 'cn'`，不使用 clsx 与 tailwind-merge。
+- 页面已适配移动端，不允许缩放：`index.html` 与 `r/index.html` 的 viewport 都带 `maximum-scale=1.0, user-scalable=no`，两处保持一致。iOS Safari 会忽略这两项，因此另由 `html` 的 `touch-action: pan-x pan-y` 禁止双击缩放，由 `src/lib/prevent-zoom.ts` 在两个入口取消双指缩放。
+- 输入框字号：`Input` 与 `Textarea` 默认窄屏 16px、宽屏 14px（`text-base md:text-sm`），不在使用处覆盖字号。iOS Safari 在输入框字号小于 16px 时，获得焦点会自动放大页面。窄屏下占位符放不下时只缩小占位符：等宽长串字段和窄字段用 `max-md:placeholder:text-xs`，其他字段用 `max-md:placeholder:text-sm`。
 - 动效：微交互用 CSS 过渡；进场、列表与页面切换用 `motion/react`。应用根部使用 `MotionConfig reducedMotion="user"`，CSS 动画配合 `motion-reduce:` 关闭。
-- 界面文案不写在组件里：先加到 `src/locales/zh-CN.json`，同步补齐 `en`、`ja`、`ko`，再运行 `pnpm locales:hant`；组件用 `useTranslation` 读取。品牌名与标语在所有语言下保持中文原文。
+- 界面文案不写在组件里：先加到 `src/locales/zh-CN.json`，同步补齐 `en`、`ja`、`ko`，再运行 `pnpm locales:hant`；组件用 `useTranslation` 读取。品牌名在所有语言下保持中文原文。
 
 ## 验证
 

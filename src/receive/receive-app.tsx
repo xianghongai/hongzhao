@@ -167,7 +167,7 @@ function RandomKeyPanel({
               setValue(event.target.value);
               setError('');
             }}
-            className="min-w-0 flex-1 font-mono text-xs"
+            className="min-w-0 flex-1 font-mono max-md:placeholder:text-xs"
           />
           <Button type="submit" disabled={value.trim() === ''}>
             <RotateCcwKeyIcon data-icon="inline-start" />
@@ -294,7 +294,7 @@ function ImportPrivateKeyDialog({
               spellCheck={false}
               aria-invalid={invalid || undefined}
               onChange={(event) => setValue(event.target.value)}
-              className="font-mono text-xs"
+              className="font-mono max-md:placeholder:text-xs"
             />
             {invalid ? (
               <FieldError>{t('receive.privateKeyInvalid')}</FieldError>
@@ -720,7 +720,7 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                       placeholder={t('receive.pastePlaceholder')}
                       spellCheck={false}
                       onChange={(event) => setLink(event.target.value)}
-                      className="min-h-16 font-mono text-xs break-all"
+                      className="min-h-16 font-mono break-all max-md:placeholder:text-sm"
                     />
                     <Button type="submit" variant="outline" disabled={link.trim() === ''} className="w-fit">
                       <FileKey data-icon="inline-start" />

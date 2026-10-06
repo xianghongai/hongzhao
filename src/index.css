@@ -134,6 +134,8 @@
   }
   html {
     @apply font-sans antialiased;
+    /* Pans only: no pinch or double-tap zoom, see `src/lib/prevent-zoom.ts`. */
+    touch-action: pan-x pan-y;
   }
   body {
     @apply min-h-dvh bg-background text-foreground;

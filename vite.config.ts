@@ -87,8 +87,8 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: false,
       manifest: {
-        name: '泥上',
-        short_name: '泥上',
+        name: '鸿爪',
+        short_name: '鸿爪',
         description: '在浏览器里运行的日常小工具：二维码、链接传送、2FA。不上传、不留存、不追踪。',
         lang: 'zh-CN',
         start_url: './',

@@ -11,10 +11,7 @@ export function Brand() {
       {/* The amber tile stands out on the dark header; the dark tile reads better on the light one. */}
       <img src={lightLogoUrl} alt="" className="size-7 dark:hidden" />
       <img src={darkLogoUrl} alt="" className="hidden size-7 dark:block" />
-      <span className="flex items-baseline gap-2">
-        <span className="font-semibold tracking-tight">{t('brand.name')}</span>
-        <span className="hidden text-sm text-muted-foreground sm:inline">{t('brand.tagline')}</span>
-      </span>
+      <span className="text-xl font-semibold tracking-tight">{t('brand.name')}</span>
     </span>
   );
 }
