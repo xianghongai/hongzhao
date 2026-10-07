@@ -3,11 +3,8 @@ import { createRoot } from 'react-dom/client';
 
 import '@/index.css';
 import { setupI18n } from '@/i18n';
-import { preventZoom } from '@/lib/prevent-zoom';
 import { ReceiveApp } from '@/receive/receive-app';
 import { takeFragment } from '@/receive/take-fragment';
-
-preventZoom();
 
 // Read before React renders, so the fragment leaves the address bar as early as possible.
 const fragment = takeFragment();
