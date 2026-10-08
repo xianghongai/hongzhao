@@ -229,6 +229,8 @@
     "recipientMasked": "Receiver's public key",
     "keyCopied": "Key copied",
     "replaceKey": "New key",
+    "showKey": "Show",
+    "hideKey": "Hide",
     "enterKey": "Enter key",
     "useKey": "Use an existing key",
     "useKeyDescription": "Enter a key you gave the recipient before. Everything you generate next is encrypted with it, so a recipient who still has it doesn’t need to enter a new one.",

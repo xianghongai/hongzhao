@@ -229,6 +229,8 @@
     "recipientMasked": "受信者の公開鍵",
     "keyCopied": "鍵をコピーしました",
     "replaceKey": "鍵を変更",
+    "showKey": "表示",
+    "hideKey": "非表示",
     "enterKey": "鍵を入力",
     "useKey": "既存の鍵を使う",
     "useKeyDescription": "以前受信者に渡した鍵を入力します。以降に生成する内容はこの鍵で暗号化されるため、受信者が鍵を保持していれば再入力は不要です。",

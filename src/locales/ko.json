@@ -226,6 +226,8 @@
     "recipientMasked": "받는 사람의 공개 키",
     "keyCopied": "키를 복사했습니다",
     "replaceKey": "키 변경",
+    "showKey": "표시",
+    "hideKey": "숨기기",
     "enterKey": "키 입력",
     "useKey": "기존 키 사용",
     "useKeyDescription": "이전에 받는 사람에게 전달한 키를 입력합니다. 이후 생성하는 내용은 이 키로 암호화되므로, 받는 사람이 키를 가지고 있으면 다시 입력할 필요가 없습니다.",

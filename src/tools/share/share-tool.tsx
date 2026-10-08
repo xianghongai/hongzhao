@@ -1,5 +1,7 @@
 import { cn } from 'cn';
 import {
+  EyeIcon,
+  EyeOffIcon,
   FileTextIcon,
   HistoryIcon,
   ImportIcon,
@@ -294,6 +296,10 @@ export default function ShareTool() {
   };
 
   const shownKey = encrypt && method === 'key' ? (output?.key ?? (fixedKey ? sessionKey : null)) : null;
+  // The key stays masked, text and QR code alike, so a screenshot of the page does not give it away.
+  // Revealing is tied to one key: a new key starts out hidden again.
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const keyRevealed = shownKey !== null && revealedKey === shownKey;
   const linkQr = useMemo(() => (output ? encodeQr(output.link, 'L', QR_MAX_VERSION) : null), [output]);
   // The bare envelope makes a smaller code, and a phone camera shows it as text instead of opening a browser.
   const envelopeQr = useMemo(() => (output ? encodeQr(output.envelope, 'L', QR_MAX_VERSION) : null), [output]);
@@ -605,9 +611,13 @@ export default function ShareTool() {
           )}
           {shownKey && keyQr?.ok && (
             <CardContent className="grid gap-4">
-              <MonoBlock>{shownKey}</MonoBlock>
+              <MonoBlock>{keyRevealed ? shownKey : maskKey(shownKey)}</MonoBlock>
               <div className="flex flex-wrap gap-2">
                 <CopyButton value={shownKey} done={t('share.keyCopied')} />
+                <Button variant="outline" onClick={() => setRevealedKey(keyRevealed ? null : shownKey)}>
+                  {keyRevealed ? <EyeOffIcon data-icon="inline-start" /> : <EyeIcon data-icon="inline-start" />}
+                  {keyRevealed ? t('share.hideKey') : t('share.showKey')}
+                </Button>
                 {fixedKey && (
                   <Button variant="outline" onClick={replaceKey}>
                     <RefreshCwIcon data-icon="inline-start" />
@@ -615,7 +625,15 @@ export default function ShareTool() {
                   </Button>
                 )}
               </div>
-              <QrPreview qr={keyQr.qr} label={t('share.keyQr')} filename="share-key" imageClassName="max-w-48" />
+              <QrPreview
+                qr={keyQr.qr}
+                label={t('share.keyQr')}
+                filename="share-key"
+                imageClassName={cn(
+                  'max-w-48 transition-[filter] motion-reduce:transition-none',
+                  !keyRevealed && 'blur-md'
+                )}
+              />
             </CardContent>
           )}
         </Card>

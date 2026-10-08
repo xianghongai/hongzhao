@@ -250,6 +250,8 @@
     "recipientMasked": "接收方公鑰",
     "keyCopied": "已複製密鑰",
     "replaceKey": "更換密鑰",
+    "showKey": "顯示",
+    "hideKey": "隱藏",
     "enterKey": "輸入密鑰",
     "useKey": "使用已有密鑰",
     "useKeyDescription": "輸入之前交給接收方的密鑰，之後生成的內容都用它加密。接收方還留著這把密鑰時，無需重新輸入。",
