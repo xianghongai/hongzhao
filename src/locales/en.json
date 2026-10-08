@@ -289,6 +289,8 @@
     "keyCannotOpen": "The current key can't decrypt this content"
   },
   "otp": {
+    "delete": "Delete",
+    "deleted": "Deleted",
     "description": "Generate codes from 2FA secrets. Secrets stay only in this tab's memory and are cleared on reload.",
     "addTitle": "Add secrets",
     "nameColumn": "Name (optional)",

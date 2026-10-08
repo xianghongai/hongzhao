@@ -283,6 +283,8 @@
     "keyCannotOpen": "当前密钥无法解密这条内容"
   },
   "otp": {
+    "delete": "删除",
+    "deleted": "已删除",
     "description": "根据 2FA 密钥生成验证码。密钥只在当前标签页的内存中，刷新即清空。",
     "addTitle": "添加密钥",
     "nameColumn": "名称（可选）",

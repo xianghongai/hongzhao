@@ -310,6 +310,8 @@
     "keyCannotOpen": "當前密鑰無法解密這條內容"
   },
   "otp": {
+    "delete": "刪除",
+    "deleted": "已刪除",
     "description": "根據 2FA 密鑰生成驗證碼。密鑰只在當前標籤頁的內存中，刷新即清空。",
     "addTitle": "添加密鑰",
     "nameColumn": "名稱（可選）",

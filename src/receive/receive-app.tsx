@@ -11,6 +11,7 @@ import {
   RefreshCwIcon,
   ShieldAlertIcon,
   FileKey,
+  TrashIcon,
   TriangleAlertIcon,
   RotateCcwKeyIcon,
   UserRoundKeyIcon,
@@ -29,7 +30,7 @@ import { QrScannerButton } from '@/components/qr-scanner';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Note } from '@/components/tool-page';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -44,7 +45,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   type KeyPair,
   decrypt,
@@ -68,6 +69,8 @@ interface Message {
   id: number;
   text: string;
   encrypted: boolean;
+  /** The envelope it came in; deleting the message lets the same envelope be received again. */
+  envelope: string;
   /** When it was received, or decrypted if it had to wait for a key. */
   at: Date;
 }
@@ -370,9 +373,13 @@ function PublicKeyPanel({
   );
 }
 
-function MessageCard({ message }: { message: Message }) {
+/** How long a deleted message can be brought back: it came from a link that is gone from the address bar. */
+const UNDO_MS = 6000;
+
+function MessageCard({ message, onDelete }: { message: Message; onDelete: () => void }) {
   const { t } = useTranslation();
   const url = singleUrl(message.text);
+  const deleteLabel = t('receive.delete');
 
   return (
     <Card>
@@ -385,6 +392,16 @@ function MessageCard({ message }: { message: Message }) {
           )}
           {message.encrypted ? t('receive.decrypted') : t('receive.received')}
         </CardTitle>
+        <CardAction>
+          <Tooltip>
+            <TooltipTrigger
+              render={<Button variant="ghost" size="icon-sm" aria-label={deleteLabel} onClick={onDelete} />}
+            >
+              <TrashIcon />
+            </TooltipTrigger>
+            <TooltipContent>{deleteLabel}</TooltipContent>
+          </Tooltip>
+        </CardAction>
       </CardHeader>
       <CardContent className="grid gap-4">
         <pre className="max-h-[60dvh] overflow-auto rounded-lg bg-muted p-3 font-mono text-sm break-all whitespace-pre-wrap select-all">
@@ -427,6 +444,7 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
     // The private half of a public-key pair made on this page; never leaves memory, never becomes text.
     privateKey: null as Uint8Array | null,
     pending: null as Uint8Array | null,
+    pendingEnvelope: '',
     seen: new Set<string>(),
     nextId: 1,
   });
@@ -440,13 +458,33 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
     () => initialEnvelope === '' || classify(initialEnvelope).kind !== 'envelope'
   );
 
-  const addMessage = (text: string, encrypted: boolean) => {
-    const message = { id: session.current.nextId++, text, encrypted, at: new Date() };
+  const addMessage = (text: string, encrypted: boolean, envelope: string) => {
+    const message = { id: session.current.nextId++, text, encrypted, envelope, at: new Date() };
     setMessages((current) => [message, ...current]);
   };
 
-  const setWaiting = (data: Uint8Array | null) => {
+  /** Deleting cannot be undone once the toast is gone, so it offers a short undo instead of asking first. */
+  const deleteMessage = (message: Message) => {
+    session.current.seen.delete(message.envelope);
+    setMessages((current) => current.filter((item) => item.id !== message.id));
+    toast(t('receive.deleted'), {
+      duration: UNDO_MS,
+      action: {
+        label: t('common.undo'),
+        onClick: () => {
+          session.current.seen.add(message.envelope);
+          // Newest first, as received; ids grow with each message.
+          setMessages((current) =>
+            current.some((item) => item.id === message.id) ? current : [...current, message].sort((a, b) => b.id - a.id)
+          );
+        },
+      },
+    });
+  };
+
+  const setWaiting = (data: Uint8Array | null, envelope = '') => {
     session.current.pending = data;
+    session.current.pendingEnvelope = envelope;
     setPending(data);
   };
 
@@ -466,7 +504,7 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
     if (opened === null) {
       return { accepted: true, message: t('receive.keySet') };
     }
-    addMessage(opened, true);
+    addMessage(opened, true, session.current.pendingEnvelope);
     setWaiting(null);
     return { accepted: true, message: t('receive.keySetDecrypted') };
   };
@@ -503,24 +541,24 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
         return message;
       }
       session.current.seen.add(envelope);
-      addMessage(text, true);
+      addMessage(text, true, envelope);
       setNotice('');
       return t('receive.receivedDecrypted');
     }
     session.current.seen.add(envelope);
     if (!parsed.encrypted) {
-      addMessage(parsed.text, false);
+      addMessage(parsed.text, false, envelope);
       setNotice('');
       return t('receive.receivedPlain');
     }
     const current = session.current.key;
     const opened = current === null ? null : tryDecrypt(parsed.data, current);
     if (opened !== null) {
-      addMessage(opened, true);
+      addMessage(opened, true, envelope);
       setNotice('');
       return t('receive.receivedDecrypted');
     }
-    setWaiting(parsed.data);
+    setWaiting(parsed.data, envelope);
     if (current === null) {
       return t('receive.receivedWaiting');
     }
@@ -740,14 +778,16 @@ export function ReceiveApp({ initialEnvelope }: { initialEnvelope: string }) {
                   layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
                 >
-                  <MessageCard message={message} />
+                  <MessageCard message={message} onDelete={() => deleteMessage(message)} />
                 </motion.div>
               ))}
             </AnimatePresence>
 
-            {!expanded && messages.length > 0 && (
+            {/* Also after the last message is deleted, so the folded page never ends up with nothing to do. */}
+            {!expanded && pending === null && (
               <Button
                 variant="ghost"
                 size="sm"
