@@ -77,7 +77,7 @@
     }
   },
   "qr": {
-    "description": "内容を入力すると、QR コードがその場で生成されます。",
+    "description": "内容を入力してから、QR コードを生成します。",
     "content": "内容",
     "format": "形式",
     "ecc": "誤り訂正レベル",
@@ -87,6 +87,9 @@
     "eccH": "高 H · 汚れに最も強い",
     "relay": "読み取ったときにリンクを直接開かない",
     "relayDescription": "購読 URL など、開くのではなくコピーして使う内容に向いています。",
+    "clearAfter": "生成後に内容を消去",
+    "clearAfterDescription": "生成後にフォームを空にします。QR コードは残るので、すぐに次の内容を入力できます。",
+    "generate": "生成",
     "relaySummary": "読み取ると、まずこのサイトの受信ページで元のテキストを表示し、リンクは直接開きません。",
     "localhost": "localhost で開いているため、スマートフォンから受信ページを開けません。LAN のアドレス（<code>pnpm dev:lan</code> の実行後に表示されるアドレスなど）か公開中のサイトで開いてください。",
     "qrCode": "QR コード",
@@ -99,6 +102,11 @@
     "decodedExit": "フォームに戻る",
     "decodedMultiple": "画像に複数の QR コードがあります。最初のものを表示しています。",
     "decodedQrLabel": "画像から読み取った QR コード",
+    "scanTitle": "QR コードをスキャン",
+    "scanDescription": "読み取る QR コードにカメラを向けてください。内容は下に表示されます。",
+    "scanned": "読み取りました",
+    "scannedBadge": "スキャンから",
+    "scannedQrLabel": "スキャンで読み取った QR コード",
     "reserveShort": "現在は使えますが、将来サイトのアドレスが長くなると、同じ内容が収まらなくなる可能性があります。",
     "formats": {
       "text": { "label": "テキスト", "summary": "読み取るとこのテキストが表示され、そのままコピーできます。" },

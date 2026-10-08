@@ -9,7 +9,7 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from 'lucide-react';
-import { useDeferredValue, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ import { ClearButton } from '@/components/clear-button';
 import { CopyButton } from '@/components/copy-button';
 import { OptionSelect } from '@/components/option-select';
 import { QrPreview } from '@/components/qr-code-view';
+import { QrScannerButton } from '@/components/qr-scanner';
 import { Note, ToolPage } from '@/components/tool-page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,9 +43,18 @@ function hasInput(values: Record<FormatId, Values>): boolean {
   );
 }
 
+/** What the form held when "Generate" was pressed; editing the form drops it until the next press. */
+interface Generated {
+  content: string;
+  /** The relay envelope inside `content`, empty unless the code goes through the receive page. */
+  envelope: string;
+}
+
 /** The text of a QR code read from an image, shown on the right in place of what the form builds. */
 interface Decoded {
   text: string;
+  /** Where the text was read from: a picture, or the camera. */
+  source: 'image' | 'camera';
   /** The image held more than one code; only the first is shown. */
   several: boolean;
 }
@@ -58,6 +68,9 @@ export default function QrTool() {
   const [ecc, setEcc] = useState<Ecc>('M');
   const [relay, setRelay] = useState(false);
   const [decoded, setDecoded] = useState<Decoded | null>(null);
+  const [generated, setGenerated] = useState<Generated | null>(null);
+  // Empties the current format's fields once a code is made, for making several in a row.
+  const [clearAfter, setClearAfter] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -75,15 +88,30 @@ export default function QrTool() {
     content = useRelay ? receiveUrl(envelope, base) : built.text;
   }
 
-  // Typing stays responsive while long content re-encodes.
-  const deferredContent = useDeferredValue(decoded?.text ?? content);
-  const result = useMemo(() => encodeQr(deferredContent, ecc), [deferredContent, ecc]);
-  const reserveShort = decoded === null && useRelay && result.ok && !fitsBytes(budgetedLength(envelope, base), ecc);
+  // The code is made on request, not while typing: half-typed content would otherwise show as a code.
+  const shown = decoded?.text ?? generated?.content ?? '';
+  const result = useMemo(() => encodeQr(shown, ecc), [shown, ecc]);
+  const reserveShort =
+    decoded === null &&
+    generated !== null &&
+    generated.envelope !== '' &&
+    result.ok &&
+    !fitsBytes(budgetedLength(generated.envelope, base), ecc);
 
-  // Touching the form brings its own content back; the form itself is never filled from an image.
+  // Touching the form drops what was generated or read; the form itself is never filled from an image.
   const updateField = (name: string, value: string) => {
     setDecoded(null);
+    setGenerated(null);
     setValues((current) => ({ ...current, [format.id]: { ...current[format.id], [name]: value } }));
+  };
+
+  const generate = () => {
+    setDecoded(null);
+    setGenerated({ content, envelope });
+    // Straight to the state: going through updateField would also drop the code just made.
+    if (clearAfter) {
+      setValues((current) => ({ ...current, [format.id]: INITIAL_VALUES[format.id] }));
+    }
   };
 
   // Images are decoded on this device and dropped right after; only the text read from one stays, in memory.
@@ -98,7 +126,7 @@ export default function QrTool() {
       if (texts.length === 0) {
         toast.error(t('common.noQrInImage'));
       } else {
-        setDecoded({ text: texts[0]!, several: texts.length > 1 });
+        setDecoded({ text: texts[0]!, source: 'image', several: texts.length > 1 });
       }
     } catch (error) {
       toast.error(error instanceof ImageReadError ? t('common.imageUnreadable') : t('common.readFailed'));
@@ -127,16 +155,19 @@ export default function QrTool() {
       description={t('qr.description')}
       actions={
         <ClearButton
-          disabled={!hasInput(values) && decoded === null}
+          disabled={!hasInput(values) && decoded === null && generated === null}
           // Clears what was typed in every format and what was read from an image; the chosen format and settings stay.
           onClear={() => {
             const previous = values;
             const previousDecoded = decoded;
+            const previousGenerated = generated;
             setValues(INITIAL_VALUES);
             setDecoded(null);
+            setGenerated(null);
             return () => {
               setValues(previous);
               setDecoded(previousDecoded);
+              setGenerated(previousGenerated);
             };
           }}
         />
@@ -159,6 +190,7 @@ export default function QrTool() {
               onValueChange={(next) => {
                 if (next[0] !== undefined) {
                   setDecoded(null);
+                  setGenerated(null);
                   setFormatId(next[0] as FormatId);
                 }
               }}
@@ -196,11 +228,25 @@ export default function QrTool() {
                   checked={relay}
                   onCheckedChange={(checked) => {
                     setDecoded(null);
+                    setGenerated(null);
                     setRelay(checked);
                   }}
                 />
               </Field>
             )}
+
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel htmlFor={`${ids}-clear-after`}>{t('qr.clearAfter')}</FieldLabel>
+                <FieldDescription>{t('qr.clearAfterDescription')}</FieldDescription>
+              </FieldContent>
+              <Switch id={`${ids}-clear-after`} checked={clearAfter} onCheckedChange={setClearAfter} />
+            </Field>
+
+            <Button size="lg" onClick={generate} disabled={!('text' in built)}>
+              <QrCodeIcon data-icon="inline-start" />
+              {t('qr.generate')}
+            </Button>
 
             {useRelay && isLoopback(base) && (
               <Note tone="warning" icon={TriangleAlertIcon}>
@@ -237,7 +283,17 @@ export default function QrTool() {
                 <QrCodeIcon className="size-4 text-brand" />
                 {t('qr.qrCode')}
               </CardTitle>
-              <CardAction>
+              <CardAction className="flex gap-2">
+                <QrScannerButton
+                  title={t('qr.scanTitle')}
+                  description={t('qr.scanDescription')}
+                  size="sm"
+                  autoClose
+                  onDetect={(text) => {
+                    setDecoded({ text, source: 'camera', several: false });
+                    return t('qr.scanned');
+                  }}
+                />
                 <Button variant="outline" size="sm" onClick={() => fileInput.current?.click()} disabled={scanning}>
                   {scanning ? (
                     <Loader2Icon data-icon="inline-start" className="animate-spin motion-reduce:animate-none" />
@@ -264,7 +320,13 @@ export default function QrTool() {
                 {result.ok ? (
                   <QrPreview
                     qr={result.qr}
-                    label={decoded === null ? t('qr.qrLabel', { format: format.label }) : t('qr.decodedQrLabel')}
+                    label={
+                      decoded === null
+                        ? t('qr.qrLabel', { format: format.label })
+                        : decoded.source === 'camera'
+                          ? t('qr.scannedQrLabel')
+                          : t('qr.decodedQrLabel')
+                    }
                     filename={decoded === null ? `qr-${format.id}` : 'qr-decoded'}
                   />
                 ) : (
@@ -286,7 +348,11 @@ export default function QrTool() {
               <CardTitle className="flex items-center gap-2">
                 <FileTextIcon className="size-4 text-brand" />
                 {t('qr.encoded')}
-                {decoded !== null && <Badge variant="secondary">{t('qr.decodedBadge')}</Badge>}
+                {decoded !== null && (
+                  <Badge variant="secondary">
+                    {decoded.source === 'camera' ? t('qr.scannedBadge') : t('qr.decodedBadge')}
+                  </Badge>
+                )}
               </CardTitle>
               {decoded !== null && (
                 <CardAction>
@@ -305,14 +371,9 @@ export default function QrTool() {
                   </Note>
                 )}
                 <pre className="max-h-72 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap">
-                  {decoded?.text ?? deferredContent}
+                  {shown}
                 </pre>
-                <CopyButton
-                  value={decoded?.text ?? deferredContent}
-                  size="sm"
-                  className="w-fit"
-                  done={t('qr.encodedCopied')}
-                />
+                <CopyButton value={shown} size="sm" className="w-fit" done={t('qr.encodedCopied')} />
                 {reserveShort && (
                   <Note icon={InfoIcon}>
                     <p>{t('qr.reserveShort')}</p>

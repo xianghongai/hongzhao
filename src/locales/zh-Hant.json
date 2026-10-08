@@ -77,7 +77,7 @@
     }
   },
   "qr": {
-    "description": "填寫內容，實時生成二維碼。",
+    "description": "填寫內容後生成二維碼。",
     "content": "內容",
     "format": "格式",
     "ecc": "糾錯等級",
@@ -87,6 +87,9 @@
     "eccH": "高 H · 最耐汙損",
     "relay": "掃碼後不直接打開鏈接",
     "relayDescription": "適合訂閱地址等只需複製、不該打開的內容。",
+    "clearAfter": "生成後清空內容",
+    "clearAfterDescription": "生成後清空表單，二維碼仍保留，方便接著填寫下一個。",
+    "generate": "生成",
     "relaySummary": "掃碼後先打開本站接收頁顯示原文，不會直接打開鏈接。",
     "localhost": "當前通過 localhost 訪問，手機無法打開接收頁。請改用局域網地址（例如運行 <code>pnpm dev:lan</code> 後顯示的地址）或線上站點打開本頁。",
     "qrCode": "二維碼",
@@ -99,6 +102,11 @@
     "decodedExit": "返回表單內容",
     "decodedMultiple": "圖片裡有多個二維碼，這裡顯示的是第一個。",
     "decodedQrLabel": "從圖片識別的二維碼",
+    "scanTitle": "掃描二維碼",
+    "scanDescription": "對準要識別的二維碼，識別後顯示在下方。",
+    "scanned": "已識別",
+    "scannedBadge": "來自掃描",
+    "scannedQrLabel": "掃描識別的二維碼",
     "reserveShort": "當前可以使用。若將來站點換用更長的地址，同樣的內容可能放不下。",
     "formats": {
       "text": {

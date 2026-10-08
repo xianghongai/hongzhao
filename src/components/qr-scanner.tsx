@@ -116,6 +116,7 @@ interface QrScannerButtonProps extends ScannerViewProps {
   description: string;
   label?: string;
   variant?: React.ComponentProps<typeof Button>['variant'];
+  size?: React.ComponentProps<typeof Button>['size'];
   /** Close the dialog automatically after the first successful scan. */
   autoClose?: boolean;
 }
@@ -129,6 +130,7 @@ export function QrScannerButton({
   description,
   label,
   variant = 'outline',
+  size,
   autoClose,
   onDetect,
 }: QrScannerButtonProps) {
@@ -137,7 +139,7 @@ export function QrScannerButton({
   const available = cameraAvailable();
 
   const button = (
-    <Button variant={variant} disabled={!available} onClick={() => setOpen(true)}>
+    <Button variant={variant} size={size} disabled={!available} onClick={() => setOpen(true)}>
       <CameraIcon data-icon="inline-start" />
       {label ?? t('common.scan')}
     </Button>
