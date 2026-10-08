@@ -35,6 +35,12 @@ export interface FieldDef {
   name: string;
   label: string;
   kind: 'text' | 'textarea' | 'password' | 'datetime' | 'select' | 'switch';
+  /**
+   * A sample of the expected format, for fields whose format is not obvious from the label (numbers, addresses,
+   * coordinates, keys); the same kind of field uses the same sample everywhere. Fields the label already explains
+   * get none: every field has a visible label, and a placeholder is not one. The lone free-text field of the text
+   * format is the exception, with a hint of what it accepts.
+   */
   placeholder?: string;
   description?: string;
   options?: ReadonlyArray<Option<string>>;
@@ -73,6 +79,11 @@ export const INITIAL_VALUES: Record<FormatId, Values> = {
 };
 
 export const FORMAT_IDS = Object.keys(INITIAL_VALUES) as FormatId[];
+
+// Format samples shared by fields of the same kind, so the same kind of field shows the same example.
+const SAMPLE_PHONE = '+86 138 0000 0000';
+const SAMPLE_EMAIL = 'name@example.com';
+const SAMPLE_URL = 'https://example.com';
 
 const v = (values: Values, name: string) => values[name] ?? '';
 
@@ -118,7 +129,7 @@ export function buildFormats(t: TFunction): readonly FormatDef[] {
           label: t('qr.fields.url'),
           kind: 'text',
           inputMode: 'url',
-          placeholder: 'https://example.com',
+          placeholder: SAMPLE_URL,
           wide: true,
         },
       ],
@@ -156,11 +167,11 @@ export function buildFormats(t: TFunction): readonly FormatDef[] {
       relay: false,
       fields: [
         { name: 'name', label: t('qr.fields.name'), kind: 'text' },
-        { name: 'phone', label: t('qr.fields.phone'), kind: 'text', inputMode: 'tel' },
-        { name: 'email', label: t('qr.fields.email'), kind: 'text', inputMode: 'email' },
+        { name: 'phone', label: t('qr.fields.phone'), kind: 'text', inputMode: 'tel', placeholder: SAMPLE_PHONE },
+        { name: 'email', label: t('qr.fields.email'), kind: 'text', inputMode: 'email', placeholder: SAMPLE_EMAIL },
         { name: 'org', label: t('qr.fields.org'), kind: 'text' },
         { name: 'title', label: t('qr.fields.jobTitle'), kind: 'text' },
-        { name: 'url', label: t('qr.fields.website'), kind: 'text', inputMode: 'url' },
+        { name: 'url', label: t('qr.fields.website'), kind: 'text', inputMode: 'url', placeholder: SAMPLE_URL },
         { name: 'address', label: t('qr.fields.address'), kind: 'text', wide: true },
         { name: 'note', label: t('qr.fields.note'), kind: 'textarea', wide: true },
       ],
@@ -183,7 +194,14 @@ export function buildFormats(t: TFunction): readonly FormatDef[] {
       icon: MailIcon,
       relay: false,
       fields: [
-        { name: 'to', label: t('qr.fields.to'), kind: 'text', inputMode: 'email', wide: true },
+        {
+          name: 'to',
+          label: t('qr.fields.to'),
+          kind: 'text',
+          inputMode: 'email',
+          placeholder: SAMPLE_EMAIL,
+          wide: true,
+        },
         { name: 'subject', label: t('qr.fields.subject'), kind: 'text', wide: true },
         { name: 'body', label: t('qr.fields.body'), kind: 'textarea', wide: true },
       ],
@@ -197,7 +215,14 @@ export function buildFormats(t: TFunction): readonly FormatDef[] {
       icon: MessageSquareIcon,
       relay: false,
       fields: [
-        { name: 'phone', label: t('qr.fields.number'), kind: 'text', inputMode: 'tel', wide: true },
+        {
+          name: 'phone',
+          label: t('qr.fields.number'),
+          kind: 'text',
+          inputMode: 'tel',
+          placeholder: SAMPLE_PHONE,
+          wide: true,
+        },
         { name: 'message', label: t('qr.fields.message'), kind: 'textarea', wide: true },
       ],
       build: (values) =>
@@ -215,7 +240,7 @@ export function buildFormats(t: TFunction): readonly FormatDef[] {
           label: t('qr.fields.number'),
           kind: 'text',
           inputMode: 'tel',
-          placeholder: '+86 138 0000 0000',
+          placeholder: SAMPLE_PHONE,
           wide: true,
         },
       ],
@@ -290,8 +315,8 @@ export function buildFormats(t: TFunction): readonly FormatDef[] {
       relay: false,
       fields: [
         { name: 'issuer', label: t('qr.fields.issuer'), kind: 'text', placeholder: 'GitHub' },
-        { name: 'account', label: t('qr.fields.account'), kind: 'text', placeholder: 'name@example.com' },
-        { name: 'secret', label: t('qr.fields.secret'), kind: 'password', wide: true },
+        { name: 'account', label: t('qr.fields.account'), kind: 'text', placeholder: SAMPLE_EMAIL },
+        { name: 'secret', label: t('qr.fields.secret'), kind: 'password', placeholder: 'JBSWY3DPEHPK3PXP', wide: true },
         {
           name: 'algorithm',
           label: t('qr.fields.algorithm'),
