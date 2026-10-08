@@ -2,6 +2,7 @@ import { cn } from 'cn';
 import {
   FileTextIcon,
   HistoryIcon,
+  ImportIcon,
   InboxIcon,
   KeyRoundIcon,
   LinkIcon,
@@ -16,6 +17,7 @@ import {
 import type { TFunction } from 'i18next';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 import { ClearButton } from '@/components/clear-button';
 import { CopyButton } from '@/components/copy-button';
@@ -25,7 +27,15 @@ import { HelpPopover, type HelpSection } from '@/components/help-popover';
 import { Note, ToolPage } from '@/components/tool-page';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,7 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Textarea } from '@/components/ui/textarea';
 import { DENSE_VERSION, encodeQr, fitsBytes } from '@/lib/qr/encode';
-import { encodeEncrypted, encodePlain, encodeSealedFor, generateKey, isX25519Key } from '@/lib/share/envelope';
+import { encodeEncrypted, encodePlain, encodeSealedFor, generateKey, isKey, isX25519Key } from '@/lib/share/envelope';
 import {
   RECEIVE_PATH,
   budgetedLength,
@@ -68,12 +78,17 @@ interface Output {
   scheme: Scheme;
   /** The random key, for the `key` scheme only. */
   key: string | null;
+  /** What was sealed; the input may have been cleared since, and a new key seals this again. */
+  text: string;
 }
 
 function helpSections(t: TFunction): HelpSection[] {
   return [
     { title: t('share.help.plainTitle'), items: [t('share.help.plain1'), t('share.help.plain2')] },
-    { title: t('share.help.keyTitle'), items: [t('share.help.key1'), t('share.help.key2'), t('share.help.key3')] },
+    {
+      title: t('share.help.keyTitle'),
+      items: [t('share.help.key1'), t('share.help.key2'), t('share.help.key3'), t('share.help.key4')],
+    },
     { title: t('share.help.publicTitle'), items: [t('share.help.public1'), t('share.help.public2')] },
   ];
 }
@@ -108,6 +123,84 @@ function MonoBlock({ children }: { children: string }) {
   );
 }
 
+/**
+ * Takes up a key handed over earlier, so a receiver who still has it can keep reading without entering a new one,
+ * even after this page was closed.
+ */
+function UseKeyDialog({ onUse }: { onUse: (key: string) => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('');
+  const id = useId();
+  const invalid = value.trim() !== '' && !isKey(value);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        setValue('');
+      }}
+    >
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        <ImportIcon data-icon="inline-start" />
+        {t('share.enterKey')}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('share.useKey')}</DialogTitle>
+          <DialogDescription>{t('share.useKeyDescription')}</DialogDescription>
+        </DialogHeader>
+        <form
+          className="grid gap-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (isKey(value)) {
+              onUse(value.trim());
+              setOpen(false);
+              setValue('');
+            }
+          }}
+        >
+          <Field data-invalid={invalid || undefined}>
+            <FieldLabel htmlFor={id}>{t('share.key')}</FieldLabel>
+            <div className="flex gap-2">
+              <Input
+                id={id}
+                value={value}
+                placeholder={t('share.keyPlaceholder')}
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-invalid={invalid || undefined}
+                onChange={(event) => setValue(event.target.value)}
+                className="min-w-0 flex-1 font-mono max-md:placeholder:text-xs"
+              />
+              <QrScannerButton
+                title={t('share.scanKey')}
+                description={t('share.scanKeyDescription')}
+                autoClose
+                onDetect={(scanned) => {
+                  if (!isKey(scanned)) {
+                    return t('share.notKey');
+                  }
+                  setValue(scanned.trim());
+                  return t('share.keyFilled');
+                }}
+              />
+            </div>
+            {invalid && <FieldError>{t('share.keyInvalid')}</FieldError>}
+          </Field>
+          <Button type="submit" disabled={!isKey(value)} className="w-fit">
+            <ImportIcon data-icon="inline-start" />
+            {t('share.use')}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ShareTool() {
   const { t, i18n } = useTranslation();
   const [text, setText] = useState('');
@@ -121,6 +214,8 @@ export default function ShareTool() {
   const [tooLong, setTooLong] = useState(false);
   // A fixed key lives only in this component's memory: the receiver enters it once for many messages.
   const [fixedKey, setFixedKey] = useState(false);
+  // Empties the input once a link is made, for sending several messages in a row.
+  const [clearAfter, setClearAfter] = useState(false);
   const [sessionKey, setSessionKey] = useState<string | null>(null);
   const [carrier, setCarrier] = useState<Carrier>('link');
   const [method, setMethod] = useState<Method>(incomingKey ? 'public' : 'key');
@@ -137,7 +232,7 @@ export default function ShareTool() {
 
   const seal = (content: string, key: string | null): Output => {
     const envelope = key ? encodeEncrypted(content, key) : encodePlain(content);
-    return { link: receiveUrl(envelope, base), envelope, scheme: key ? 'key' : 'plain', key };
+    return { link: receiveUrl(envelope, base), envelope, scheme: key ? 'key' : 'plain', key, text: content };
   };
 
   const recipientValid = isX25519Key(recipient);
@@ -158,17 +253,21 @@ export default function ShareTool() {
   const generate = () => {
     if (byPublicKey) {
       const envelope = encodeSealedFor(text, recipient);
-      show({ link: receiveUrl(envelope, base), envelope, scheme: 'public', key: null });
-      return;
-    }
-    let key: string | null = null;
-    if (encrypt) {
-      key = fixedKey ? (sessionKey ?? generateKey()) : generateKey();
-      if (fixedKey) {
-        setSessionKey(key);
+      show({ link: receiveUrl(envelope, base), envelope, scheme: 'public', key: null, text });
+    } else {
+      let key: string | null = null;
+      if (encrypt) {
+        key = fixedKey ? (sessionKey ?? generateKey()) : generateKey();
+        if (fixedKey) {
+          setSessionKey(key);
+        }
       }
+      show(seal(text, key));
     }
-    show(seal(text, key));
+    // Straight to the state: the field's onChange would also clear the result just made.
+    if (clearAfter) {
+      setText('');
+    }
   };
 
   const toggleFixedKey = (checked: boolean) => {
@@ -177,12 +276,21 @@ export default function ShareTool() {
     setSessionKey(checked ? (output?.key ?? generateKey()) : null);
   };
 
-  const replaceKey = () => {
-    const next = generateKey();
+  /** Swaps in another key for what comes next; a result already sealed with a key is sealed again with it. */
+  const switchKey = (next: string) => {
     setSessionKey(next);
     if (output?.key) {
-      setOutput(seal(text, next));
+      setOutput(seal(output.text, next));
     }
+  };
+
+  const replaceKey = () => switchKey(generateKey());
+
+  // A key from earlier is meant for many messages, so it turns the fixed key on.
+  const applyKey = (key: string) => {
+    setFixedKey(true);
+    switchKey(key);
+    toast(t('share.keyApplied'));
   };
 
   const shownKey = encrypt && method === 'key' ? (output?.key ?? (fixedKey ? sessionKey : null)) : null;
@@ -356,6 +464,14 @@ export default function ShareTool() {
               </Field>
             )}
 
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel htmlFor={`${ids}-clear-after`}>{t('share.clearAfter')}</FieldLabel>
+                <FieldDescription>{t('share.clearAfterDescription')}</FieldDescription>
+              </FieldContent>
+              <Switch id={`${ids}-clear-after`} checked={clearAfter} onCheckedChange={setClearAfter} />
+            </Field>
+
             <Button size="lg" onClick={generate} disabled={text === '' || (byPublicKey && !recipientValid)}>
               {encrypt ? <LockIcon data-icon="inline-start" /> : <LinkIcon data-icon="inline-start" />}
               {output ? t('share.regenerate') : t('share.generate')}
@@ -462,6 +578,11 @@ export default function ShareTool() {
               {t('share.key')}
               {encrypt && method === 'key' && fixedKey && <Badge variant="secondary">{t('share.fixed')}</Badge>}
             </CardTitle>
+            {encrypt && method === 'key' && (
+              <CardAction>
+                <UseKeyDialog onUse={applyKey} />
+              </CardAction>
+            )}
             {!encrypt ? (
               <CardDescription>{t('share.notEncrypted')}</CardDescription>
             ) : byPublicKey ? (

@@ -170,6 +170,7 @@
       "key1": "由发送方提供密钥：加密时随机生成。",
       "key2": "把加密内容和密钥分开发给接收方。",
       "key3": "连传多条时开启“固定密钥”，接收方只需输入一次。",
+      "key4": "换了设备或关闭过页面后，可以在“密钥”中输入之前的密钥继续使用。",
       "publicTitle": "接收方公钥",
       "public1": "由接收方提供密钥：在接收页生成公钥，交给发送方。",
       "public2": "发送方用公钥加密后发给接收方，无需另外传递密钥。"
@@ -195,6 +196,8 @@
     "recipientHint": "由接收方在接收页“解密”的“公钥”中生成。",
     "fixedKey": "固定密钥",
     "fixedKeyDescription": "多次生成使用同一把密钥，接收方只需输入一次。",
+    "clearAfter": "生成后清空内容",
+    "clearAfterDescription": "生成后清空输入框，结果仍保留，方便接着输入下一条。",
     "generate": "生成",
     "regenerate": "重新生成",
     "tooLong": "内容过多，生成的链接会超过 {{limit}} 个字符，浏览器与聊天软件都难以完整承载。请精简内容，或改用文件传输。",
@@ -220,6 +223,17 @@
     "recipientMasked": "接收方公钥",
     "keyCopied": "已复制密钥",
     "replaceKey": "更换密钥",
+    "enterKey": "输入密钥",
+    "useKey": "使用已有密钥",
+    "useKeyDescription": "输入之前交给接收方的密钥，之后生成的内容都用它加密。接收方还留着这把密钥时，无需重新输入。",
+    "keyPlaceholder": "粘贴密钥",
+    "keyInvalid": "密钥格式不正确",
+    "scanKey": "扫描密钥二维码",
+    "scanKeyDescription": "对准之前保存的密钥二维码。",
+    "notKey": "这不是密钥二维码",
+    "keyFilled": "已填入密钥",
+    "use": "使用",
+    "keyApplied": "已使用该密钥，并开启固定密钥",
     "keyQr": "密钥二维码"
   },
   "receive": {
@@ -269,6 +283,8 @@
     "decrypted": "已解密",
     "received": "收到的内容",
     "openLink": "打开链接",
+    "delete": "删除",
+    "deleted": "已删除",
     "more": "接收更多内容",
     "volatile": "刷新或关闭本页后，内容和密钥都不会保留。",
     "keySet": "已设置密钥",
@@ -283,8 +299,6 @@
     "keyCannotOpen": "当前密钥无法解密这条内容"
   },
   "otp": {
-    "delete": "删除",
-    "deleted": "已删除",
     "description": "根据 2FA 密钥生成验证码。密钥只在当前标签页的内存中，刷新即清空。",
     "addTitle": "添加密钥",
     "nameColumn": "名称（可选）",

@@ -176,6 +176,7 @@
       "key1": "The sender provides the key: a random one is made for each encryption.",
       "key2": "Send the encrypted content and the key to the receiver separately.",
       "key3": "To send several items, turn on Fixed key so the receiver enters it only once.",
+      "key4": "After switching devices or closing the page, enter the earlier key under Key to keep using it.",
       "publicTitle": "Receiver's public key",
       "public1": "The receiver provides the key: they create a public key on the receive page and give it to the sender.",
       "public2": "The sender encrypts with that public key and sends the result; no key needs to be passed along."
@@ -201,6 +202,8 @@
     "recipientHint": "The receiver creates it under Decrypt › Public key on the receive page.",
     "fixedKey": "Fixed key",
     "fixedKeyDescription": "Reuse one key across generations, so the receiver enters it only once.",
+    "clearAfter": "Clear after generating",
+    "clearAfterDescription": "Empties the box after each link is made; the result stays, so you can type the next message right away.",
     "generate": "Generate",
     "regenerate": "Regenerate",
     "tooLong": "Too much content: the link would exceed {{limit}} characters, more than browsers and chat apps can reliably carry. Shorten the content or send it as a file.",
@@ -226,6 +229,17 @@
     "recipientMasked": "Receiver's public key",
     "keyCopied": "Key copied",
     "replaceKey": "New key",
+    "enterKey": "Enter key",
+    "useKey": "Use an existing key",
+    "useKeyDescription": "Enter a key you gave the recipient before. Everything you generate next is encrypted with it, so a recipient who still has it doesn’t need to enter a new one.",
+    "keyPlaceholder": "Paste the key",
+    "keyInvalid": "The key format isn’t valid",
+    "scanKey": "Scan the key QR code",
+    "scanKeyDescription": "Point the camera at a key QR code you saved earlier.",
+    "notKey": "This isn’t a key QR code",
+    "keyFilled": "Key filled in",
+    "use": "Use",
+    "keyApplied": "Using this key, with Fixed key turned on",
     "keyQr": "Key QR code"
   },
   "receive": {
@@ -275,6 +289,8 @@
     "decrypted": "Decrypted",
     "received": "Received",
     "openLink": "Open link",
+    "delete": "Delete",
+    "deleted": "Deleted",
     "more": "Receive more",
     "volatile": "Nothing here, content or keys, survives reloading or closing the page.",
     "keySet": "Key set",
@@ -289,8 +305,6 @@
     "keyCannotOpen": "The current key can't decrypt this content"
   },
   "otp": {
-    "delete": "Delete",
-    "deleted": "Deleted",
     "description": "Generate codes from 2FA secrets. Secrets stay only in this tab's memory and are cleared on reload.",
     "addTitle": "Add secrets",
     "nameColumn": "Name (optional)",

@@ -197,6 +197,7 @@
       "key1": "由發送方提供密鑰：加密時隨機生成。",
       "key2": "把加密內容和密鑰分開發給接收方。",
       "key3": "連傳多條時開啟“固定密鑰”，接收方只需輸入一次。",
+      "key4": "換了設備或關閉過頁面後，可以在“密鑰”中輸入之前的密鑰繼續使用。",
       "publicTitle": "接收方公鑰",
       "public1": "由接收方提供密鑰：在接收頁生成公鑰，交給發送方。",
       "public2": "發送方用公鑰加密後發給接收方，無需另外傳遞密鑰。"
@@ -222,6 +223,8 @@
     "recipientHint": "由接收方在接收頁“解密”的“公鑰”中生成。",
     "fixedKey": "固定密鑰",
     "fixedKeyDescription": "多次生成使用同一把密鑰，接收方只需輸入一次。",
+    "clearAfter": "生成後清空內容",
+    "clearAfterDescription": "生成後清空輸入框，結果仍保留，方便接著輸入下一條。",
     "generate": "生成",
     "regenerate": "重新生成",
     "tooLong": "內容過多，生成的鏈接會超過 {{limit}} 個字符，瀏覽器與聊天軟件都難以完整承載。請精簡內容，或改用文件傳輸。",
@@ -247,6 +250,17 @@
     "recipientMasked": "接收方公鑰",
     "keyCopied": "已複製密鑰",
     "replaceKey": "更換密鑰",
+    "enterKey": "輸入密鑰",
+    "useKey": "使用已有密鑰",
+    "useKeyDescription": "輸入之前交給接收方的密鑰，之後生成的內容都用它加密。接收方還留著這把密鑰時，無需重新輸入。",
+    "keyPlaceholder": "粘貼密鑰",
+    "keyInvalid": "密鑰格式不正確",
+    "scanKey": "掃描密鑰二維碼",
+    "scanKeyDescription": "對準之前保存的密鑰二維碼。",
+    "notKey": "這不是密鑰二維碼",
+    "keyFilled": "已填入密鑰",
+    "use": "使用",
+    "keyApplied": "已使用該密鑰，並開啟固定密鑰",
     "keyQr": "密鑰二維碼"
   },
   "receive": {
@@ -296,6 +310,8 @@
     "decrypted": "已解密",
     "received": "收到的內容",
     "openLink": "打開鏈接",
+    "delete": "刪除",
+    "deleted": "已刪除",
     "more": "接收更多內容",
     "volatile": "刷新或關閉本頁後，內容和密鑰都不會保留。",
     "keySet": "已設置密鑰",
@@ -310,8 +326,6 @@
     "keyCannotOpen": "當前密鑰無法解密這條內容"
   },
   "otp": {
-    "delete": "刪除",
-    "deleted": "已刪除",
     "description": "根據 2FA 密鑰生成驗證碼。密鑰只在當前標籤頁的內存中，刷新即清空。",
     "addTitle": "添加密鑰",
     "nameColumn": "名稱（可選）",
