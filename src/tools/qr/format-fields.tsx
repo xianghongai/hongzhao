@@ -33,7 +33,7 @@ function FieldControl({
           value={value}
           placeholder={field.placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className="max-h-72 min-h-28 max-md:placeholder:text-sm"
+          className="max-h-72 min-h-28 wrap-anywhere max-md:placeholder:text-sm"
         />
       );
     case 'select':

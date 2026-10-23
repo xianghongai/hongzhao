@@ -366,7 +366,7 @@ export default function ShareTool() {
                   setText(event.target.value);
                   clearOutput();
                 }}
-                className="max-h-96 min-h-40 font-mono max-md:placeholder:text-sm"
+                className="max-h-96 min-h-40 font-mono wrap-anywhere max-md:placeholder:text-sm"
               />
             </Field>
 
