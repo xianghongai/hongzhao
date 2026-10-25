@@ -26,6 +26,26 @@
       stroke-dashoffset: 100;
     }
   }
+
+  /* The home background's glows drift slowly; each uses its own path so they never move in step. */
+  @keyframes drift-a {
+    0%,
+    100% {
+      transform: translate3d(-6%, -4%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(8%, 6%, 0) scale(1.08);
+    }
+  }
+  @keyframes drift-b {
+    0%,
+    100% {
+      transform: translate3d(6%, 4%, 0) scale(1.05);
+    }
+    50% {
+      transform: translate3d(-8%, -6%, 0) scale(0.96);
+    }
+  }
 }
 
 @theme inline {
@@ -34,6 +54,8 @@
    * Inlined into the utility, so they resolve per element rather than once on :root.
    */
   --animate-countdown: countdown var(--countdown-duration, 30s) linear var(--countdown-delay, 0s) forwards;
+  --animate-drift-a: drift-a 26s ease-in-out infinite;
+  --animate-drift-b: drift-b 34s ease-in-out infinite;
 
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
