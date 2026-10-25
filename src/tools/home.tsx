@@ -3,13 +3,15 @@ import { motion } from 'motion/react';
 import { Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 
+import { HomeBackground } from '@/components/home-background';
 import { TOOLS } from '@/tools/registry';
 
 export function Home() {
   const { t } = useTranslation();
 
   return (
-    <div className="py-12 sm:py-20">
+    <div className="relative py-12 sm:py-20">
+      <HomeBackground />
       <section className="max-w-2xl">
         <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
           {t('home.headline1')}
