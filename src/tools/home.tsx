@@ -31,7 +31,7 @@ export function Home() {
           >
             <Link
               href={path}
-              className="group flex h-full flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10 transition-[box-shadow,background-color] hover:ring-brand/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="group flex h-full flex-col gap-4 rounded-xl bg-card p-5 ring-1 dark:card-grain ring-foreground/10 transition-[box-shadow,background-color] hover:ring-brand/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <span className="flex size-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
                 <Icon className="size-5" />
